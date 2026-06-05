@@ -1,5 +1,7 @@
 name: CLAW Growth Cycle
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
   schedule:
     - cron: '0 */6 * * *'
