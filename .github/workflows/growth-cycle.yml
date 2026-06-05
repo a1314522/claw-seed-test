@@ -44,11 +44,11 @@ jobs:
         "
     
     - name: Write Back
+      env:
+        GH_TOKEN: ${{ secrets.CLAW_TOKEN }}
       run: |
         git config user.name "CLAW"
         git config user.email "claw@openclaw.local"
         git add diary/ results/ nodes/
         git commit -m "growth: $(date) [skip ci]" || echo "Nothing to commit"
-        git push https://a1314522:${{ secrets.GITHUB_TOKEN }}@github.com/a1314522/claw-seed-test.git HEAD:main || echo "Push failed"
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        git push https://a1314522:${GH_TOKEN}@github.com/a1314522/claw-seed-test.git HEAD:main || echo "Push failed"
