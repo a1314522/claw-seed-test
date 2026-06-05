@@ -21,15 +21,16 @@ jobs:
     - name: Verify Seed Files
       run: |
         SEED_DIR=$(ls -d openclaw-seed-* | head -1)
+        echo "SEED_DIR=$SEED_DIR" >> $GITHUB_ENV
         echo "Seed dir: $SEED_DIR"
         ls -la "$SEED_DIR/restore-scripts/"
         python3 -m py_compile "$SEED_DIR/restore-scripts/minimal_claw.py"
         echo "Script syntax: OK"
     - name: Test Identity Load
       run: |
-        SEED_DIR=$(ls -d openclaw-seed-* | head -1)
         python3 -c "
         import os
+        SEED_DIR = os.environ['SEED_DIR']
         soul = open(f'{SEED_DIR}/workspace/SOUL.md').read() if os.path.exists(f'{SEED_DIR}/workspace/SOUL.md') else 'NOT FOUND'
         memory = open(f'{SEED_DIR}/workspace/MEMORY.md').read() if os.path.exists(f'{SEED_DIR}/workspace/MEMORY.md') else 'NOT FOUND'
         print(f'SOUL: {len(soul)} bytes')
@@ -42,7 +43,6 @@ jobs:
         "
     - name: Run Minimal CLAW
       run: |
-        SEED_DIR=$(ls -d openclaw-seed-* | head -1)
         printf 'whoami\nmode\nstatus\nexit\n' > /tmp/test-input.txt
         cd "$SEED_DIR/restore-scripts"
         sed -i "s|/root/.openclaw/workspace|/github/workspace/$SEED_DIR/workspace|g" minimal_claw.py
