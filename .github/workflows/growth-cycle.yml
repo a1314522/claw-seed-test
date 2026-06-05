@@ -26,12 +26,14 @@ jobs:
     
     - name: Install Ollama + Run
       run: |
+        mkdir -p diary results nodes
         curl -fsSL https://ollama.com/install.sh | sh
         ollama serve &
         sleep 5
         ollama pull llama3.2:1b
         pip install ollama -q
         echo "continue" | python3 openclaw-seed-20260605-160258/restore-scripts/minimal_claw.py > diary/$(date +%Y%m%d-%H%M).md || echo "Run completed"
+        echo "Diary file size: $(ls -lh diary/ 2>/dev/null | tail -1)"
     
     - name: Process Tasks
       env:
