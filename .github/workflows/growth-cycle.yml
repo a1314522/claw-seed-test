@@ -11,7 +11,7 @@ permissions:
 jobs:
   grow:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 10
     steps:
     - uses: actions/checkout@v4
       with:
@@ -24,21 +24,11 @@ jobs:
         echo "last=$LAST" >> $GITHUB_ENV
         echo "Previous: $LAST"
     
-    - name: Install Ollama + Run
-      run: |
-        mkdir -p diary results nodes
-        curl -fsSL https://ollama.com/install.sh | sh
-        ollama serve &
-        sleep 5
-        ollama pull llama3.2:1b
-        pip install ollama -q
-        echo "continue" | python3 openclaw-seed-20260605-160258/restore-scripts/minimal_claw.py > diary/$(date +%Y%m%d-%H%M).md || echo "Run completed"
-        echo "Diary file size: $(ls -lh diary/ 2>/dev/null | tail -1)"
-    
     - name: Process Tasks
       env:
         GH_TOKEN: ${{ secrets.CLAW_TOKEN }}
       run: |
+        mkdir -p diary results nodes
         python3 -c "
         import requests, json, os, base64
         from datetime import datetime
@@ -53,7 +43,6 @@ jobs:
         all_issues = r.json() if r.status_code == 200 else []
         if not isinstance(all_issues, list): all_issues = []
         
-        # Filter issues with task labels
         task_labels = {'task:search', 'task:sync', 'task:ping'}
         issues = []
         for issue in all_issues:
@@ -67,7 +56,6 @@ jobs:
             issue_num = issue['number']
             print(f'Processing issue #{issue_num}: {issue[\"title\"]}')
             
-            # Parse task
             try:
                 task = json.loads(issue['body'])
             except:
@@ -76,7 +64,6 @@ jobs:
             task_type = task.get('type', '')
             params = task.get('params', {})
             
-            # Execute task (lightweight, no LLM)
             if task_type == 'search':
                 result = {'query': params.get('query', ''), 'results': [f'Action node processed: {params.get(\"query\", \"\")}'], 'timestamp': datetime.now().isoformat(), 'node': NODE_ID}
             elif task_type == 'sync':
@@ -91,14 +78,10 @@ jobs:
             else:
                 result = {'error': f'unknown type: {task_type}', 'node': NODE_ID}
             
-            # Write result to issue comment
             result_json = json.dumps(result, indent=2, ensure_ascii=False)
-            requests.post(f'https://api.github.com/repos/{REPO}/issues/{issue_num}/comments', headers=headers, json={'body': f'## Result from {NODE_ID}\n\n```json\n{result_json}\n```'})
-            
-            # Close issue
+            requests.post(f'https://api.github.com/repos/{REPO}/issues/{issue_num}/comments', headers=headers, json={'body': f'## Result from {NODE_ID}\n\n\`\`\`json\n{result_json}\n\`\`\`'})
             requests.patch(f'https://api.github.com/repos/{REPO}/issues/{issue_num}', headers=headers, json={'state': 'closed', 'labels': ['status:done']})
             
-            # Save result to file
             task_id = task.get('task_id', f't-{issue_num}')
             date_str = datetime.now().strftime('%Y-%m-%d')
             os.makedirs(f'results/{date_str}', exist_ok=True)
@@ -108,6 +91,23 @@ jobs:
             print(f'  Task {task_id} completed')
         
         print('Task processing complete')
+        
+        # Generate diary entry
+        now = datetime.now()
+        diary_entry = f"""# CLAW Growth Cycle - {now.strftime('%Y-%m-%d %H:%M')}
+
+**Node:** {NODE_ID}
+**Status:** Active
+**Tasks processed:** {len(issues)}
+**Last state:** {os.environ.get('last', 'None')}
+
+---
+
+*Automated entry. Lightweight cycle (no Ollama).*
+"""
+        with open(f'diary/{now.strftime(\"%Y%m%d-%H%M\")}.md', 'w') as f:
+            f.write(diary_entry)
+        print(f'Diary written: diary/{now.strftime(\"%Y%m%d-%H%M\")}.md')
         "
     
     - name: Write Back
