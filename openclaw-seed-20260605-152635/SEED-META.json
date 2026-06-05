@@ -1,0 +1,14 @@
+{
+  "seed_name": "openclaw-seed-20260605-152635",
+  "created_at": "2026-06-05T15:26:35+08:00",
+  "hostname": "VM-141-0-ubuntu",
+  "platform": "Linux",
+  "arch": "x86_64",
+  "openclaw_version": "OpenClaw 2026.4.14 (323493f)",
+  "identity_files": [
+    "SOUL.md", "MEMORY.md", "USER.md", "AGENTS.md", "IDENTITY.md"
+  ],
+  "memory_files": ["memory/", "memorized_diary/"],
+  "skills": ["skills/"],
+  "restore_command": "./restore-scripts/restore.sh"
+}
