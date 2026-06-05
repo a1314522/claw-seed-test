@@ -1,7 +1,8 @@
 name: CLAW Growth Cycle
 on:
-  push:
-    branches: [main]
+  workflow_dispatch:
+  schedule:
+    - cron: '0 */6 * * *'
 
 permissions:
   contents: write
@@ -13,5 +14,109 @@ jobs:
     timeout-minutes: 10
     steps:
     - uses: actions/checkout@v4
-    - name: Test
-      run: echo "Test passed"
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        fetch-depth: 0
+    
+    - name: Read Last State
+      run: |
+        LAST=$(ls -t diary/*.md 2>/dev/null | head -1)
+        echo "last=$LAST" >> $GITHUB_ENV
+        echo "Previous: $LAST"
+    
+    - name: Process Tasks
+      env:
+        GH_TOKEN: ${{ secrets.CLAW_TOKEN }}
+      run: |
+        mkdir -p diary results nodes
+        python3 -c "
+        import requests, json, os, base64
+        from datetime import datetime
+        
+        REPO = 'a1314522/claw-seed-test'
+        TOKEN = os.environ['GH_TOKEN']
+        NODE_ID = 'actions-1'
+        headers = {'Authorization': f'token {TOKEN}', 'Accept': 'application/vnd.github.v3+json'}
+        
+        # 1. Read ALL open issues, filter by labels in code
+        r = requests.get(f'https://api.github.com/repos/{REPO}/issues?state=open', headers=headers)
+        all_issues = r.json() if r.status_code == 200 else []
+        if not isinstance(all_issues, list): all_issues = []
+        
+        task_labels = {'task:search', 'task:sync', 'task:ping'}
+        issues = []
+        for issue in all_issues:
+            labels = {l['name'] for l in issue.get('labels', [])}
+            if labels & task_labels:
+                issues.append(issue)
+        
+        print(f'Found {len(issues)} open tasks (from {len(all_issues)} total issues)')
+        
+        for issue in issues:
+            issue_num = issue['number']
+            print(f'Processing issue #{issue_num}: {issue[\"title\"]}')
+            
+            try:
+                task = json.loads(issue['body'])
+            except:
+                task = {'type': 'search', 'params': {'query': issue['title']}, 'task_id': f't-{issue_num}'}
+            
+            task_type = task.get('type', '')
+            params = task.get('params', {})
+            
+            if task_type == 'search':
+                result = {'query': params.get('query', ''), 'results': [f'Action node processed: {params.get(\"query\", \"\")}'], 'timestamp': datetime.now().isoformat(), 'node': NODE_ID}
+            elif task_type == 'sync':
+                url = params.get('url', '')
+                try:
+                    r2 = requests.get(url, timeout=30)
+                    result = {'url': url, 'status': r2.status_code, 'size': len(r2.content), 'timestamp': datetime.now().isoformat(), 'node': NODE_ID}
+                except Exception as e:
+                    result = {'error': str(e), 'node': NODE_ID}
+            elif task_type == 'ping':
+                result = {'status': 'alive', 'timestamp': datetime.now().isoformat(), 'node': NODE_ID}
+            else:
+                result = {'error': f'unknown type: {task_type}', 'node': NODE_ID}
+            
+            result_json = json.dumps(result, indent=2, ensure_ascii=False)
+            requests.post(f'https://api.github.com/repos/{REPO}/issues/{issue_num}/comments', headers=headers, json={'body': f'## Result from {NODE_ID}\n\n\`\`\`json\n{result_json}\n\`\`\`'})
+            requests.patch(f'https://api.github.com/repos/{REPO}/issues/{issue_num}', headers=headers, json={'state': 'closed', 'labels': ['status:done']})
+            
+            task_id = task.get('task_id', f't-{issue_num}')
+            date_str = datetime.now().strftime('%Y-%m-%d')
+            os.makedirs(f'results/{date_str}', exist_ok=True)
+            with open(f'results/{date_str}/{task_id}-{NODE_ID}.json', 'w') as f:
+                f.write(result_json)
+            
+            print(f'  Task {task_id} completed')
+        
+        print('Task processing complete')
+        
+        # Generate diary entry
+        now = datetime.now()
+        diary_entry = f\"\"\"# CLAW Growth Cycle - {now.strftime('%Y-%m-%d %H:%M')}
+
+**Node:** {NODE_ID}
+**Status:** Active
+**Tasks processed:** {len(issues)}
+**Last state:** {os.environ.get('last', 'None')}
+
+---
+
+*Automated entry. Lightweight cycle (no Ollama).*
+\"\"\"
+        with open(f'diary/{now.strftime(\"%Y%m%d-%H%M\")}.md', 'w') as f:
+            f.write(diary_entry)
+        print(f'Diary written: diary/{now.strftime(\"%Y%m%d-%H%M\")}.md')
+        "
+    
+    - name: Write Back
+      env:
+        GH_TOKEN: ${{ secrets.CLAW_TOKEN }}
+      run: |
+        git config user.name "CLAW"
+        git config user.email "claw@openclaw.local"
+        mkdir -p diary results nodes
+        git add diary/ results/ nodes/ || echo "Some dirs missing"
+        git commit -m "growth: $(date) [skip ci]" || echo "Nothing to commit"
+        git push https://a1314522:${GH_TOKEN}@github.com/a1314522/claw-seed-test.git HEAD:main || echo "Push failed"
