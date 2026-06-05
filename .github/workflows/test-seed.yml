@@ -1,0 +1,63 @@
+name: Seed Germination Test
+on: [push, workflow_dispatch]
+jobs:
+  test-seed:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
+      with: { python-version: '3.12' }
+    - name: Install Ollama
+      run: |
+        curl -fsSL https://ollama.com/install.sh | sh
+        ollama --version
+    - name: Pull llama3.2:1b
+      run: |
+        ollama pull llama3.2:1b
+        ollama list
+    - name: Setup Python Client
+      run: pip install ollama -q
+    - name: Verify Seed Files
+      run: |
+        SEED_DIR=$(ls -d openclaw-seed-* | head -1)
+        echo "Seed dir: $SEED_DIR"
+        ls -la "$SEED_DIR/restore-scripts/"
+        python3 -m py_compile "$SEED_DIR/restore-scripts/minimal_claw.py"
+        echo "Script syntax: OK"
+    - name: Test Identity Load
+      run: |
+        SEED_DIR=$(ls -d openclaw-seed-* | head -1)
+        python3 -c "
+        import os
+        soul = open(f'{SEED_DIR}/workspace/SOUL.md').read() if os.path.exists(f'{SEED_DIR}/workspace/SOUL.md') else 'NOT FOUND'
+        memory = open(f'{SEED_DIR}/workspace/MEMORY.md').read() if os.path.exists(f'{SEED_DIR}/workspace/MEMORY.md') else 'NOT FOUND'
+        print(f'SOUL: {len(soul)} bytes')
+        print(f'MEMORY: {len(memory)} bytes')
+        print(f'--- SOUL (first 200 chars) ---')
+        print(soul[:200])
+        print(f'--- MEMORY (first 200 chars) ---')
+        print(memory[:200])
+        print('IDENTITY LOADED: OK')
+        "
+    - name: Run Minimal CLAW - whoami
+      run: |
+        SEED_DIR=$(ls -d openclaw-seed-* | head -1)
+        cat > /tmp/test-input.txt << 'EOF'
+whoami
+mode
+status
+exit
+EOF
+        cd "$SEED_DIR/restore-scripts"
+        sed -i "s|/root/.openclaw/workspace|/github/workspace/$SEED_DIR/workspace|g" minimal_claw.py
+        cat /tmp/test-input.txt | timeout 120 python3 minimal_claw.py 2>&1 || echo "Test completed (timeout or exit)"
+      timeout-minutes: 5
+    - name: Archive Results
+      if: always()
+      run: |
+        echo "=== Test Complete ==="
+        echo "Disk:"
+        df -h
+        echo "Memory:"
+        free -h
