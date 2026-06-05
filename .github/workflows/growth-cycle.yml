@@ -33,14 +33,71 @@ jobs:
         pip install ollama -q
         echo "continue" | python3 openclaw-seed-20260605-160258/restore-scripts/minimal_claw.py > diary/$(date +%Y%m%d-%H%M).md || echo "Run completed"
     
-    - name: Process Results
+    - name: Process Tasks
+      env:
+        GH_TOKEN: ${{ secrets.CLAW_TOKEN }}
       run: |
         python3 -c "
-        import os, json, glob
-        results = glob.glob('results/**/*.json', recursive=True)
-        print(f'Found {len(results)} result files')
-        for r in results:
-            print(f'  - {r}')
+        import requests, json, os, base64
+        from datetime import datetime
+        
+        REPO = 'a1314522/claw-seed-test'
+        TOKEN = os.environ['GH_TOKEN']
+        NODE_ID = 'actions-1'
+        headers = {'Authorization': f'token {TOKEN}', 'Accept': 'application/vnd.github.v3+json'}
+        
+        # 1. Read open issues with task labels
+        r = requests.get(f'https://api.github.com/repos/{REPO}/issues?labels=task:search,task:sync&state=open', headers=headers)
+        issues = r.json() if r.status_code == 200 else []
+        if not isinstance(issues, list): issues = []
+        
+        print(f'Found {len(issues)} open tasks')
+        
+        for issue in issues:
+            issue_num = issue['number']
+            print(f'Processing issue #{issue_num}: {issue[\"title\"]}')
+            
+            # Parse task
+            try:
+                task = json.loads(issue['body'])
+            except:
+                task = {'type': 'search', 'params': {'query': issue['title']}, 'task_id': f't-{issue_num}'}
+            
+            task_type = task.get('type', '')
+            params = task.get('params', {})
+            
+            # Execute task (lightweight, no LLM)
+            if task_type == 'search':
+                result = {'query': params.get('query', ''), 'results': [f'Action node processed: {params.get(\"query\", \"\")}'], 'timestamp': datetime.now().isoformat(), 'node': NODE_ID}
+            elif task_type == 'sync':
+                url = params.get('url', '')
+                try:
+                    r2 = requests.get(url, timeout=30)
+                    result = {'url': url, 'status': r2.status_code, 'size': len(r2.content), 'timestamp': datetime.now().isoformat(), 'node': NODE_ID}
+                except Exception as e:
+                    result = {'error': str(e), 'node': NODE_ID}
+            elif task_type == 'ping':
+                result = {'status': 'alive', 'timestamp': datetime.now().isoformat(), 'node': NODE_ID}
+            else:
+                result = {'error': f'unknown type: {task_type}', 'node': NODE_ID}
+            
+            # Write result to issue comment
+            result_json = json.dumps(result, indent=2, ensure_ascii=False)
+            requests.post(f'https://api.github.com/repos/{REPO}/issues/{issue_num}/comments', headers=headers, json={'body': f'## Result from {NODE_ID}\n\n```json\n{result_json}\n```'})
+            
+            # Close issue
+            requests.patch(f'https://api.github.com/repos/{REPO}/issues/{issue_num}', headers=headers, json={'state': 'closed', 'labels': ['status:done']})
+            
+            # Save result to file
+            task_id = task.get('task_id', f't-{issue_num}')
+            date_str = datetime.now().strftime('%Y-%m-%d')
+            os.makedirs(f'results/{date_str}', exist_ok=True)
+            with open(f'results/{date_str}/{task_id}-{NODE_ID}.json', 'w') as f:
+                f.write(result_json)
+            
+            print(f'  Task {task_id} completed')
+        
+        print('Task processing complete')
         "
     
     - name: Write Back
