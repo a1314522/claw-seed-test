@@ -12,6 +12,11 @@ jobs:
       run: |
         curl -fsSL https://ollama.com/install.sh | sh
         ollama --version
+    - name: Start Ollama Service
+      run: |
+        ollama serve &
+        sleep 5
+        echo "Ollama service started"
     - name: Pull llama3.2:1b
       run: |
         ollama pull llama3.2:1b
