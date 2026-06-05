@@ -46,12 +46,20 @@ jobs:
         NODE_ID = 'actions-1'
         headers = {'Authorization': f'token {TOKEN}', 'Accept': 'application/vnd.github.v3+json'}
         
-        # 1. Read open issues with task labels
-        r = requests.get(f'https://api.github.com/repos/{REPO}/issues?labels=task:search,task:sync&state=open', headers=headers)
-        issues = r.json() if r.status_code == 200 else []
-        if not isinstance(issues, list): issues = []
+        # 1. Read ALL open issues, filter by labels in code
+        r = requests.get(f'https://api.github.com/repos/{REPO}/issues?state=open', headers=headers)
+        all_issues = r.json() if r.status_code == 200 else []
+        if not isinstance(all_issues, list): all_issues = []
         
-        print(f'Found {len(issues)} open tasks')
+        # Filter issues with task labels
+        task_labels = {'task:search', 'task:sync', 'task:ping'}
+        issues = []
+        for issue in all_issues:
+            labels = {l['name'] for l in issue.get('labels', [])}
+            if labels & task_labels:
+                issues.append(issue)
+        
+        print(f'Found {len(issues)} open tasks (from {len(all_issues)} total issues)')
         
         for issue in issues:
             issue_num = issue['number']
