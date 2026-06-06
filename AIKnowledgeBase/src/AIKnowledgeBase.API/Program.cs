@@ -17,9 +17,19 @@ using Microsoft.OpenApi.Models;
 var builder = WebApplication.CreateBuilder(args);
 
 // Database
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? "Data Source=App_Data/knowledgebase.db";
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlite(connectionString, b => b.MigrationsAssembly("AIKnowledgeBase.API")));
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? "Host=localhost;Port=5432;Database=knowledgebase;Username=postgres;Password=postgres";
+var dbProvider = builder.Configuration.GetValue<string>("Database:Provider", "postgresql");
+
+if (dbProvider == "postgresql")
+{
+    builder.Services.AddDbContext<AppDbContext>(options =>
+        options.UseNpgsql(connectionString, b => b.MigrationsAssembly("AIKnowledgeBase.API")));
+}
+else
+{
+    builder.Services.AddDbContext<AppDbContext>(options =>
+        options.UseSqlite(connectionString, b => b.MigrationsAssembly("AIKnowledgeBase.API")));
+}
 
 // JWT
 var jwtSecret = builder.Configuration.GetValue<string>("Jwt:Secret") ?? "DefaultSecretKey12345678901234567890!";
@@ -37,7 +47,13 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IDocumentParser, DocumentParserService>();
 builder.Services.AddScoped<ISearchEngine, SearchEngineService>();
 
-// LLM
+// Asset Management Services
+builder.Services.AddScoped<IAssetService, AssetService>();
+
+// MeiliSearch
+var meiliHost = builder.Configuration.GetValue<string>("MeiliSearch:Host") ?? "http://localhost:7700";
+var meiliKey = builder.Configuration.GetValue<string>("MeiliSearch:ApiKey") ?? "masterKey";
+builder.Services.AddSingleton<IMeiliSearchService>(new MeiliSearchService(meiliHost, meiliKey));
 var ollamaEnabled = builder.Configuration.GetValue<bool>("Ollama:Enabled", false);
 var ollamaUrl = builder.Configuration.GetValue<string>("Ollama:BaseUrl") ?? "http://localhost:11434";
 var ollamaModel = builder.Configuration.GetValue<string>("Ollama:Model") ?? "qwen2.5";
