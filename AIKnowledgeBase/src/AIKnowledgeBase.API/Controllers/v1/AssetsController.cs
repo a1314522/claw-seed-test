@@ -8,6 +8,7 @@ namespace AIKnowledgeBase.API.Controllers.v1;
 [ApiController]
 [Route("api/v1/am/assets")]
 [Produces("application/json")]
+[AllowAnonymous]
 public class AssetsController : ControllerBase
 {
     private readonly IAssetService _assetService;
