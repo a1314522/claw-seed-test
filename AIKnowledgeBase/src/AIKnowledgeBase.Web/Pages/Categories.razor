@@ -1,0 +1,144 @@
+@page "/categories"
+@inject CategoryService CategoryService
+@inject AuthService AuthService
+
+<PageTitle>分类管理 - AI 知识库</PageTitle>
+
+<h3>分类管理</h3>
+
+@if (AuthService.HasPermission("CategoryCreate"))
+{
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">@(editingId.HasValue ? "编辑分类" : "新建分类")</h5>
+            <div class="row">
+                <div class="col-md-4">
+                    <input class="form-control" @bind="newName" placeholder="分类名称" />
+                </div>
+                <div class="col-md-4">
+                    <input class="form-control" @bind="newDescription" placeholder="描述" />
+                </div>
+                <div class="col-md-2">
+                    <div class="form-check mt-2">
+                        <input class="form-check-input" type="checkbox" @bind="newIsPublic" id="isPublic" />
+                        <label class="form-check-label" for="isPublic">公开</label>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-primary" @onclick="SaveCategory">@(editingId.HasValue ? "保存" : "创建")</button>
+                    @if (editingId.HasValue)
+                    {
+                        <button class="btn btn-secondary ms-2" @onclick="CancelEdit">取消</button>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>名称</th>
+            <th>描述</th>
+            <th>公开</th>
+            <th>文档数</th>
+            <th>操作</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var cat in categories)
+        {
+            <tr>
+                <td>@cat.Name</td>
+                <td>@(cat.Description ?? "-")</td>
+                <td>@(cat.IsPublic ? "✓" : "✗")</td>
+                <td>@cat.DocumentCount</td>
+                <td>
+                    @if (AuthService.HasPermission("CategoryEdit") && cat.Id != 1)
+                    {
+                        <button class="btn btn-sm btn-outline-primary" @onclick="() => EditCategory(cat)">编辑</button>
+                    }
+                    @if (AuthService.HasPermission("CategoryDelete") && cat.Id != 1)
+                    {
+                        <button class="btn btn-sm btn-outline-danger ms-1" @onclick="() => DeleteCategory(cat.Id)">删除</button>
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@code {
+    private List<CategoryDto> categories = new();
+    private string newName = "";
+    private string newDescription = "";
+    private bool newIsPublic = true;
+    private int? editingId;
+
+    protected override async Task OnInitializedAsync() => await LoadCategories();
+
+    private async Task LoadCategories()
+    {
+        var result = await CategoryService.GetCategoriesAsync();
+        if (result?.Data != null) categories = result.Data;
+    }
+
+    private async Task SaveCategory()
+    {
+        if (string.IsNullOrWhiteSpace(newName)) return;
+
+        if (editingId.HasValue)
+        {
+            var result = await CategoryService.UpdateCategoryAsync(editingId.Value, new UpdateCategoryRequest
+            {
+                Name = newName,
+                Description = newDescription,
+                IsPublic = newIsPublic
+            });
+            if (result?.Success == true)
+            {
+                CancelEdit();
+                await LoadCategories();
+            }
+        }
+        else
+        {
+            var result = await CategoryService.CreateCategoryAsync(new CreateCategoryRequest
+            {
+                Name = newName,
+                Description = newDescription,
+                IsPublic = newIsPublic
+            });
+            if (result?.Success == true)
+            {
+                newName = "";
+                newDescription = "";
+                newIsPublic = true;
+                await LoadCategories();
+            }
+        }
+    }
+
+    private void EditCategory(CategoryDto cat)
+    {
+        editingId = cat.Id;
+        newName = cat.Name;
+        newDescription = cat.Description ?? "";
+        newIsPublic = cat.IsPublic;
+    }
+
+    private void CancelEdit()
+    {
+        editingId = null;
+        newName = "";
+        newDescription = "";
+        newIsPublic = true;
+    }
+
+    private async Task DeleteCategory(int id)
+    {
+        var result = await CategoryService.DeleteCategoryAsync(id);
+        if (result?.Success == true) await LoadCategories();
+    }
+}

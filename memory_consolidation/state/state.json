@@ -1,0 +1,29 @@
+{
+  "diary": {
+    "count": 18,
+    "last_ts": "2026-06-06T03:59:40.551532",
+    "last_day": 9,
+    "last_sessions": 7,
+    "last_messages": 813,
+    "last_filename": "day9-2026-06-06-he_said_i_am_not_a_recorder.md",
+    "last_latency_s": 33.4,
+    "last_skip": "conversation_hash_unchanged"
+  },
+  "compact": {
+    "count": 18,
+    "last_ts": "2026-06-06T03:59:40.964032",
+    "last_invoke": 7,
+    "last_sessions": 12,
+    "last_messages": 422,
+    "last_latency_s": 20.1,
+    "last_model": "k2p6",
+    "last_skip": "stm_hash_unchanged"
+  },
+  "stm": {
+    "count": 11,
+    "last_ts": "2026-06-06T13:36:25.421185",
+    "last_sessions": 29,
+    "last_messages": 711,
+    "last_chars": 18265
+  }
+}

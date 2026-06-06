@@ -1,0 +1,23 @@
+<Router AppAssembly="@typeof(App).Assembly">
+    <Found Context="routeData">
+        <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)">
+            <NotAuthorized>
+                @if (context.User.Identity?.IsAuthenticated != true)
+                {
+                    <RedirectToLogin />
+                }
+                else
+                {
+                    <p class="text-center mt-5">你没有权限访问此页面。</p>
+                }
+            </NotAuthorized>
+        </AuthorizeRouteView>
+        <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+    </Found>
+    <NotFound>
+        <PageTitle>未找到</PageTitle>
+        <LayoutView Layout="@typeof(MainLayout)">
+            <p class="text-center mt-5">页面未找到</p>
+        </LayoutView>
+    </NotFound>
+</Router>

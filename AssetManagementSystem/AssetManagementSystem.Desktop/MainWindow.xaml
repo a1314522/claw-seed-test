@@ -1,0 +1,58 @@
+<Window x:Class="AssetManagementSystem.Desktop.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:AssetManagementSystem.Desktop.ViewModels"
+        Title="固定资产管理系统" Height="900" Width="1400"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource BackgroundBrush}">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="220"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <Border Grid.Column="0" Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,1,0">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <StackPanel Grid.Row="0" Margin="20,24,20,16">
+                    <TextBlock Text="固定资产管理系统" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource ForegroundBrush}"/>
+                    <TextBlock Text="v1.0.0" FontSize="12" Foreground="{DynamicResource PrimaryBrush}" Margin="0,4,0,0"/>
+                </StackPanel>
+
+                <StackPanel Grid.Row="1" Margin="8,0">
+                    <Button Content="🏠 首页" Command="{Binding NavigateToDashboardCommand}" Style="{StaticResource MenuButtonStyle}"/>
+                    <Button Content="📦 资产卡片" Command="{Binding NavigateToAssetsCommand}" Style="{StaticResource MenuButtonStyle}"/>
+                    <Button Content="📁 资产分类" Command="{Binding NavigateToCategoriesCommand}" Style="{StaticResource MenuButtonStyle}"/>
+                    <Button Content="📝 采购入账" Command="{Binding NavigateToPurchasesCommand}" Style="{StaticResource MenuButtonStyle}"/>
+                    <Button Content="🔧 消耗品" Command="{Binding NavigateToConsumablesCommand}" Style="{StaticResource MenuButtonStyle}"/>
+                    <Button Content="📊 报表统计" Command="{Binding NavigateToReportsCommand}" Style="{StaticResource MenuButtonStyle}"/>
+                    <Button Content="⚙️ 系统设置" Command="{Binding NavigateToSettingsCommand}" Style="{StaticResource MenuButtonStyle}"/>
+                </StackPanel>
+
+                <StackPanel Grid.Row="2" Margin="20,16">
+                    <TextBlock Text="内网部署版" FontSize="11" Foreground="{DynamicResource BorderBrush}" HorizontalAlignment="Center"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <Grid Grid.Column="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <Border Grid.Row="0" Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Height="56">
+                <Grid Margin="24,0">
+                    <TextBlock Text="{Binding CurrentPageTitle}" VerticalAlignment="Center" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource ForegroundBrush}"/>
+                </Grid>
+            </Border>
+
+            <ContentControl x:Name="MainContent" Grid.Row="1" Content="{Binding CurrentPage}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
+        </Grid>
+    </Grid>
+</Window>

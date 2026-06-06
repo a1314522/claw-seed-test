@@ -1,0 +1,135 @@
+@page "/roles"
+@attribute [Authorize]
+@inject HttpClient Http
+@inject IJSRuntime JS
+
+<h3>角色管理</h3>
+
+@if (!isAdmin)
+{
+    <div class="alert alert-warning">您没有权限访问此页面。</div>
+}
+else
+{
+    <button class="btn btn-primary mb-3" @onclick="ShowCreateModal">+ 新建角色</button>
+    
+    @if (roles == null)
+    {
+        <p>加载中...</p>
+    }
+    else if (!roles.Any())
+    {
+        <p>暂无角色</p>
+    }
+    else
+    {
+        <table class="table">
+            <thead>
+                <tr><th>ID</th><th>名称</th><th>描述</th><th>权限</th><th>操作</th></tr>
+            </thead>
+            <tbody>
+                @foreach (var r in roles)
+                {
+                    <tr>
+                        <td>@r.Id</td>
+                        <td>@r.Name</td>
+                        <td>@r.Description</td>
+                        <td>@string.Join(", ", r.Permissions)</td>
+                        <td>
+                            @if (r.Id > 3)
+                            {
+                                <button class="btn btn-danger btn-sm" @onclick="() => DeleteRole(r.Id)">删除</button>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+}
+
+@if (showCreateModal)
+{
+    <div class="modal show d-block" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">新建角色</h5>
+                    <button type="button" class="btn-close" @onclick="CloseModal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">角色名称</label>
+                        <input class="form-control" @bind="newRole.Name" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">描述</label>
+                        <input class="form-control" @bind="newRole.Description" />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="CloseModal">取消</button>
+                    <button class="btn btn-primary" @onclick="CreateRole">确定</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop show"></div>
+}
+
+@code {
+    private List<RoleDto>? roles;
+    private bool isAdmin = false;
+    private bool showCreateModal = false;
+    private CreateRoleRequest newRole = new();
+
+    [CascadingParameter]
+    private Task<AuthenticationState>? authenticationState { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (authenticationState != null)
+        {
+            var authState = await authenticationState;
+            isAdmin = authState.User.HasClaim("is_admin", "true");
+        }
+        if (isAdmin) await LoadRoles();
+    }
+
+    private async Task LoadRoles()
+    {
+        try
+        {
+            var response = await Http.GetFromJsonAsync<ApiResponse<List<RoleDto>>>("api/roles");
+            roles = response?.Data ?? new List<RoleDto>();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"加载失败: {ex.Message}");
+        }
+    }
+
+    private void ShowCreateModal() { newRole = new(); showCreateModal = true; }
+    private void CloseModal() => showCreateModal = false;
+
+    private async Task CreateRole()
+    {
+        try
+        {
+            var response = await Http.PostAsJsonAsync("api/roles", newRole);
+            if (response.IsSuccessStatusCode) { CloseModal(); await LoadRoles(); }
+        }
+        catch (Exception ex) { await JS.InvokeVoidAsync("alert", ex.Message); }
+    }
+
+    private async Task DeleteRole(int id)
+    {
+        if (!await JS.InvokeAsync<bool>("confirm", "确定删除？")) return;
+        try
+        {
+            var response = await Http.DeleteAsync($"api/roles/{id}");
+            if (response.IsSuccessStatusCode) await LoadRoles();
+        }
+        catch (Exception ex) { await JS.InvokeVoidAsync("alert", ex.Message); }
+    }
+}

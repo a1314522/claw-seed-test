@@ -1,0 +1,154 @@
+@page "/settings/ad"
+@layout MainLayout
+
+<PageTitle>AD域配置</PageTitle>
+
+<div class="container">
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <h2>🔐 AD域认证配置</h2>
+            <p class="text-muted">配置Active Directory域登录，员工可直接使用域账号登录系统</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5>域控制器配置</h5>
+                </div>
+                <div class="card-body">
+                    <form>
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" @bind="adEnabled" id="adEnabled">
+                                <label class="form-check-label" for="adEnabled">
+                                    <strong>启用AD域认证</strong>
+                                </label>
+                            </div>
+                            <small class="form-text text-muted">启用后，用户可使用域账号密码登录系统</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">域控制器服务器</label>
+                            <input type="text" class="form-control" @bind="adServer" placeholder="dc.yourcompany.com 或 192.168.1.10" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">端口</label>
+                            <input type="number" class="form-control" @bind="adPort" placeholder="389（LDAP）或 636（LDAPS）" />
+                            <small class="form-text text-muted">标准LDAP端口389，加密LDAPS端口636</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Base DN</label>
+                            <input type="text" class="form-control" @bind="baseDn" placeholder="DC=yourcompany,DC=com" />
+                            <small class="form-text text-muted">例如: DC=rorze,DC=local</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">域名</label>
+                            <input type="text" class="form-control" @bind="domain" placeholder="YOURCOMPANY" />
+                            <small class="form-text text-muted">用户登录时使用的域名前缀，如 YOURCOMPANY\username</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">管理员账号（用于测试连接）</label>
+                            <input type="text" class="form-control" @bind="testUsername" placeholder="DOMAIN\administrator" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">管理员密码</label>
+                            <input type="password" class="form-control" @bind="testPassword" placeholder="测试连接用密码" />
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-primary" @onclick="SaveConfig">保存配置</button>
+                            <button type="button" class="btn btn-success" @onclick="TestConnection">测试连接</button>
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(message))
+                        {
+                            <div class="alert @messageClass mt-3" role="alert">
+                                @message
+                            </div>
+                        }
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6>配置说明</h6>
+                </div>
+                <div class="card-body">
+                    <p><strong>部署建议：</strong></p>
+                    <ul class="small">
+                        <li>系统部署在内网，AD域控制器可直连</li>
+                        <li>建议使用LDAPS（636端口）加密传输</li>
+                        <li>若使用LDAP（389），确保内网安全</li>
+                    </ul>
+                    <p><strong>用户登录流程：</strong></p>
+                    <ol class="small">
+                        <li>用户输入域账号（或自动识别）</li>
+                        <li>系统连接AD验证密码</li>
+                        <li>验证通过后获取用户姓名、部门</li>
+                        <li>匹配本地数据库权限</li>
+                    </ol>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6>当前状态</h6>
+                </div>
+                <div class="card-body">
+                    <p>AD认证: <span class="badge @(adEnabled ? "bg-success" : "bg-secondary")">
+                        @(adEnabled ? "已启用" : "未启用")
+                    </span></p>
+                    <p>服务器: @(string.IsNullOrEmpty(adServer) ? "未配置" : adServer)</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private bool adEnabled = false;
+    private string adServer = "";
+    private int adPort = 389;
+    private string baseDn = "";
+    private string domain = "";
+    private string testUsername = "";
+    private string testPassword = "";
+    private string message = "";
+    private string messageClass = "alert-info";
+
+    protected override void OnInitialized()
+    {
+        // TODO: 从SystemConfig加载AD配置
+    }
+
+    private void SaveConfig()
+    {
+        // TODO: 保存到SystemConfig表
+        message = "AD配置已保存";
+        messageClass = "alert-success";
+    }
+
+    private void TestConnection()
+    {
+        // TODO: 使用System.DirectoryServices测试AD连接
+        if (!adEnabled)
+        {
+            message = "请先启用AD认证";
+            messageClass = "alert-warning";
+            return;
+        }
+
+        message = "连接测试成功（模拟）";
+        messageClass = "alert-success";
+    }
+}

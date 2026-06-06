@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>固定资产管理系统 - UI预览</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            background: #F5F5F5;
+            color: #1A1A1A;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        /* 侧边栏 */
+        .sidebar {
+            width: 220px;
+            background: #FFFFFF;
+            border-right: 1px solid #E0E0E0;
+            display: flex;
+            flex-direction: column;
+            padding: 24px 0;
+        }
+        .sidebar-header {
+            padding: 0 20px 24px;
+            border-bottom: 1px solid #E0E0E0;
+            margin-bottom: 8px;
+        }
+        .sidebar-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #1A1A1A;
+        }
+        .sidebar-version {
+            font-size: 12px;
+            color: #2B579A;
+            margin-top: 4px;
+        }
+        .nav-item {
+            padding: 12px 20px;
+            margin: 2px 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            color: #6E6E6E;
+            transition: all 0.2s;
+        }
+        .nav-item:hover, .nav-item.active {
+            background: #E8E8E8;
+            color: #1A1A1A;
+        }
+        .nav-item.active {
+            background: #E8F0FE;
+            color: #2B579A;
+        }
+        .sidebar-footer {
+            margin-top: auto;
+            padding: 16px 20px;
+            text-align: center;
+            font-size: 11px;
+            color: #E0E0E0;
+        }
+        
+        /* 主内容区 */
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .header {
+            height: 56px;
+            background: #FFFFFF;
+            border-bottom: 1px solid #E0E0E0;
+            display: flex;
+            align-items: center;
+            padding: 0 24px;
+        }
+        .header-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1A1A1A;
+        }
+        .content {
+            flex: 1;
+            padding: 24px;
+            overflow-y: auto;
+        }
+        
+        /* 卡片 */
+        .card {
+            background: #FFFFFF;
+            border: 1px solid #E0E0E0;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 1px 8px rgba(0,0,0,0.1);
+        }
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1A1A1A;
+            margin-bottom: 12px;
+        }
+        
+        /* 统计卡片 */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        .stat-card {
+            background: #FFFFFF;
+            border: 1px solid #E0E0E0;
+            border-radius: 8px;
+            padding: 16px;
+            box-shadow: 0 1px 8px rgba(0,0,0,0.1);
+        }
+        .stat-label {
+            font-size: 14px;
+            color: #6E6E6E;
+        }
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            margin-top: 8px;
+        }
+        .stat-primary { color: #2B579A; }
+        .stat-green { color: #28A745; }
+        .stat-orange { color: #FF8C00; }
+        .stat-accent { color: #0078D4; }
+        
+        /* 表格 */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #E0E0E0;
+        }
+        th {
+            font-weight: 600;
+            color: #6E6E6E;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+        tr:hover {
+            background: #F8F9FA;
+        }
+        
+        /* 按钮 */
+        .btn {
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: none;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-primary {
+            background: #2B579A;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #1E3F6F;
+        }
+        .btn-secondary {
+            background: transparent;
+            color: #2B579A;
+            border: 1px solid #2B579A;
+        }
+        .btn-secondary:hover {
+            background: #E8F0FE;
+        }
+        .btn-icon {
+            padding: 4px 8px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .btn-icon:hover {
+            background: #E8E8E8;
+        }
+        
+        /* 表单 */
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+        .form-label {
+            font-size: 14px;
+            color: #6E6E6E;
+            margin-bottom: 4px;
+        }
+        .form-input {
+            padding: 8px 12px;
+            border: 1px solid #E0E0E0;
+            border-radius: 6px;
+            font-size: 14px;
+            height: 36px;
+            background: #FFFFFF;
+            color: #1A1A1A;
+        }
+        .form-input:focus {
+            outline: none;
+            border-color: #2B579A;
+        }
+        textarea.form-input {
+            height: 80px;
+            resize: vertical;
+        }
+        
+        /* 搜索栏 */
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .search-box {
+            display: flex;
+            gap: 8px;
+        }
+        .search-input {
+            width: 240px;
+            padding: 8px 12px;
+            border: 1px solid #E0E0E0;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        /* 状态标签 */
+        .badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .badge-green {
+            background: #D4EDDA;
+            color: #155724;
+        }
+        .badge-orange {
+            background: #FFF3CD;
+            color: #856404;
+        }
+        .badge-red {
+            background: #F8D7DA;
+            color: #721C24;
+        }
+        .badge-blue {
+            background: #D1ECF1;
+            color: #0C5460;
+        }
+        
+        /* 树形菜单 */
+        .tree-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .tree-item:hover {
+            background: #F8F9FA;
+        }
+        .tree-children {
+            padding-left: 24px;
+        }
+        .tree-toggle {
+            font-size: 10px;
+            color: #6E6E6E;
+            cursor: pointer;
+        }
+        
+        /* 页面切换 */
+        .page { display: none; }
+        .page.active { display: block; }
+        
+        /* 响应式 */
+        @media (max-width: 1024px) {
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .form-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <!-- 侧边栏 -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-title">固定资产管理系统</div>
+            <div class="sidebar-version">v1.0.0</div>
+        </div>
+        <div class="nav-item active" onclick="showPage('dashboard')">🏠 首页</div>
+        <div class="nav-item" onclick="showPage('assets')">📦 资产卡片</div>
+        <div class="nav-item" onclick="showPage('categories')">📁 资产分类</div>
+        <div class="nav-item" onclick="showPage('purchases')">📝 采购入账</div>
+        <div class="nav-item" onclick="showPage('consumables')">🔧 消耗品</div>
+        <div class="nav-item" onclick="showPage('reports')">📊 报表统计</div>
+        <div class="nav-item" onclick="showPage('settings')">⚙️ 系统设置</div>
+        <div class="sidebar-footer">内网部署版</div>
+    </div>
+    
+    <!-- 主内容 -->
+    <div class="main">
+        <div class="header">
+            <div class="header-title" id="pageTitle">首页</div>
+        </div>
+        <div class="content">
+            <!-- 首页 -->
+            <div class="page active" id="page-dashboard">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-label">总资产数</div>
+                        <div class="stat-value stat-primary">127</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">在用资产</div>
+                        <div class="stat-value stat-green">98</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">维修中</div>
+                        <div class="stat-value stat-orange">12</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">本月采购</div>
+                        <div class="stat-value stat-accent">¥45,600</div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-title">最近资产变动</div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>资产编号</th>
+                                <th>资产名称</th>
+                                <th>分类</th>
+                                <th>状态</th>
+                                <th>购入日期</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>IT-2024-001</td>
+                                <td>联想 ThinkPad X1</td>
+                                <td>笔记本电脑</td>
+                                <td><span class="badge badge-green">在用</span></td>
+                                <td>2024-01-15</td>
+                            </tr>
+                            <tr>
+                                <td>IT-2024-002</td>
+                                <td>Dell OptiPlex 7090</td>
+                                <td>台式电脑</td>
+                                <td><span class="badge badge-green">在用</span></td>
+                                <td>2024-02-20</td>
+                            </tr>
+                            <tr>
+                                <td>OA-2024-001</td>
+                                <td>HP LaserJet Pro</td>
+                                <td>激光打印机</td>
+                                <td><span class="badge badge-green">在用</span></td>
+                                <td>2024-03-01</td>
+                            </tr>
+                            <tr>
+                                <td>IT-2022-001</td>
+                                <td>旧服务器 Dell R740</td>
+                                <td>服务器</td>
+                                <td><span class="badge badge-red">报废</span></td>
+                                <td>2022-01-05</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- 资产卡片 -->
+            <div class="page" id="page-assets">
+                <div class="toolbar">
+                    <div class="search-box">
+                        <input type="text" class="search-input" placeholder="搜索资产名称/编号...">
+                        <button class="btn btn-primary">🔍 搜索</button>
+                    </div>
+                    <div class="search-box">
+                        <button class="btn btn-primary">➕ 新增资产</button>
+                        <button class="btn btn-secondary">📥 导入</button>
+                        <button class="btn btn-secondary">📤 导出</button>
+                    </div>
+                </div>
+                <div class="card">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>资产编号</th>
+                                <th>资产名称</th>
+                                <th>分类</th>
+                                <th>规格型号</th>
+                                <th>使用部门</th>
+                                <th>责任人</th>
+                                <th>状态</th>
+                                <th>购入日期</th>
+                                <th>原值</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>IT-2024-001</td>
+                                <td>联想 ThinkPad X1</td>
+                                <td>笔记本电脑</td>
+                                <td>ThinkPad X1 Carbon</td>
+                                <td>IT部</td>
+                                <td>张三</td>
+                                <td><span class="badge badge-green">在用</span></td>
+                                <td>2024-01-15</td>
+                                <td>¥12,999</td>
+                                <td>
+                                    <button class="btn-icon">✏️</button>
+                                    <button class="btn-icon">🗑️</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>IT-2024-002</td>
+                                <td>Dell OptiPlex 7090</td>
+                                <td>台式电脑</td>
+                                <td>OptiPlex 7090 Tower</td>
+                                <td>采购部</td>
+                                <td>李四</td>
+                                <td><span class="badge badge-green">在用</span></td>
+                                <td>2024-02-20</td>
+                                <td>¥8,999</td>
+                                <td>
+                                    <button class="btn-icon">✏️</button>
+                                    <button class="btn-icon">🗑️</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>OA-2024-001</td>
+                                <td>HP LaserJet Pro M404</td>
+                                <td>激光打印机</td>
+                                <td>LaserJet Pro M404dn</td>
+                                <td>财务部</td>
+                                <td>王五</td>
+                                <td><span class="badge badge-green">在用</span></td>
+                                <td>2024-03-01</td>
+                                <td>¥3,599</td>
+                                <td>
+                                    <button class="btn-icon">✏️</button>
+                                    <button class="btn-icon">🗑️</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- 资产分类 -->
+            <div class="page" id="page-categories">
+                <div class="toolbar">
+                    <button class="btn btn-primary">➕ 新增分类</button>
+                    <button class="btn btn-secondary">🗑️ 删除选中</button>
+                </div>
+                <div class="card">
+                    <div class="tree-item">
+                        <span class="tree-toggle">▼</span>
+                        <span>📁 IT设备</span>
+                        <span style="margin-left: auto; color: #6E6E6E; font-size: 12px;">(4件)</span>
+                    </div>
+                    <div class="tree-children">
+                        <div class="tree-item">📄 台式电脑 (2件)</div>
+                        <div class="tree-item">📄 笔记本电脑 (1件)</div>
+                        <div class="tree-item">📄 服务器 (1件)</div>
+                        <div class="tree-item">📄 网络设备 (1件)</div>
+                    </div>
+                    <div class="tree-item">
+                        <span class="tree-toggle">▼</span>
+                        <span>📁 办公设备</span>
+                        <span style="margin-left: auto; color: #6E6E6E; font-size: 12px;">(3件)</span>
+                    </div>
+                    <div class="tree-children">
+                        <div class="tree-item">📄 激光打印机 (1件)</div>
+                        <div class="tree-item">📄 喷墨打印机 (0件)</div>
+                        <div class="tree-item">📄 投影仪 (0件)</div>
+                    </div>
+                    <div class="tree-item">
+                        <span class="tree-toggle">▶</span>
+                        <span>📁 家具</span>
+                        <span style="margin-left: auto; color: #6E6E6E; font-size: 12px;">(0件)</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 采购入账 -->
+            <div class="page" id="page-purchases">
+                <div class="toolbar">
+                    <button class="btn btn-primary">➕ 新增采购单</button>
+                    <button class="btn btn-secondary">📥 导入</button>
+                    <button class="btn btn-secondary">📤 导出</button>
+                </div>
+                <div class="card">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>采购单号</th>
+                                <th>供应商</th>
+                                <th>采购日期</th>
+                                <th>总金额</th>
+                                <th>状态</th>
+                                <th>申请人</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>PO-2024-001</td>
+                                <td>京东企业购</td>
+                                <td>2024-01-10</td>
+                                <td>¥25,998</td>
+                                <td><span class="badge badge-green">已入库</span></td>
+                                <td>张三</td>
+                                <td>
+                                    <button class="btn-icon">✏️</button>
+                                    <button class="btn-icon">🗑️</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>PO-2024-005</td>
+                                <td>戴尔直销</td>
+                                <td>2024-02-15</td>
+                                <td>¥17,998</td>
+                                <td><span class="badge badge-blue">采购中</span></td>
+                                <td>李四</td>
+                                <td>
+                                    <button class="btn-icon">✏️</button>
+                                    <button class="btn-icon">🗑️</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- 消耗品 -->
+            <div class="page" id="page-consumables">
+                <div class="toolbar">
+                    <button class="btn btn-primary">➕ 新增消耗品</button>
+                    <button class="btn btn-secondary">📤 领用记录</button>
+                </div>
+                <div class="card">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>名称</th>
+                                <th>规格</th>
+                                <th>当前库存</th>
+                                <th>单位</th>
+                                <th>安全库存</th>
+                                <th>存放位置</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>A4打印纸</td>
+                                <td>80g</td>
+                                <td><span class="badge badge-green">150</span></td>
+                                <td>包</td>
+                                <td>50</td>
+                                <td>康桥-1F-仓库A区</td>
+                                <td>
+                                    <button class="btn-icon">✏️</button>
+                                    <button class="btn-icon">➖</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>HP 88A硒鼓</td>
+                                <td>CC388A</td>
+                                <td><span class="badge badge-orange">8</span></td>
+                                <td>个</td>
+                                <td>5</td>
+                                <td>康桥-1F-仓库B区</td>
+                                <td>
+                                    <button class="btn-icon">✏️</button>
+                                    <button class="btn-icon">➖</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>网线 CAT6</td>
+                                <td>3米</td>
+                                <td><span class="badge badge-green">200</span></td>
+                                <td>条</td>
+                                <td>30</td>
+                                <td>临港-1F-仓库C区</td>
+                                <td>
+                                    <button class="btn-icon">✏️</button>
+                                    <button class="btn-icon">➖</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- 报表统计 -->
+            <div class="page" id="page-reports">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <div class="card">
+                        <div class="card-title">按部门统计</div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>部门</th>
+                                    <th>资产数量</th>
+                                    <th>原值合计</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>IT部</td>
+                                    <td>45</td>
+                                    <td>¥856,200</td>
+                                </tr>
+                                <tr>
+                                    <td>财务部</td>
+                                    <td>12</td>
+                                    <td>¥156,800</td>
+                                </tr>
+                                <tr>
+                                    <td>采购部</td>
+                                    <td>8</td>
+                                    <td>¥98,500</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">按分类统计</div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>分类</th>
+                                    <th>资产数量</th>
+                                    <th>原值合计</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>IT设备</td>
+                                    <td>52</td>
+                                    <td>¥920,400</td>
+                                </tr>
+                                <tr>
+                                    <td>办公设备</td>
+                                    <td>18</td>
+                                    <td>¥145,600</td>
+                                </tr>
+                                <tr>
+                                    <td>家具</td>
+                                    <td>35</td>
+                                    <td>¥78,300</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="card" style="grid-column: 1 / -1;">
+                        <div class="card-title">资产状态分布</div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>状态</th>
+                                    <th>数量</th>
+                                    <th>占比</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><span class="badge badge-green">在用</span></td>
+                                    <td>98</td>
+                                    <td>77.2%</td>
+                                </tr>
+                                <tr>
+                                    <td><span class="badge badge-orange">维修中</span></td>
+                                    <td>12</td>
+                                    <td>9.4%</td>
+                                </tr>
+                                <tr>
+                                    <td><span class="badge badge-blue">闲置</span></td>
+                                    <td>8</td>
+                                    <td>6.3%</td>
+                                </tr>
+                                <tr>
+                                    <td><span class="badge badge-red">报废</span></td>
+                                    <td>9</td>
+                                    <td>7.1%</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 系统设置 -->
+            <div class="page" id="page-settings">
+                <div class="card">
+                    <div class="card-title">金蝶同步配置</div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">服务器地址</label>
+                            <input type="text" class="form-input" placeholder="https://k3cloud.example.com">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">应用ID</label>
+                            <input type="text" class="form-input" placeholder="app_id_123">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">应用密钥</label>
+                            <input type="password" class="form-input" placeholder="secret_key">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">账套ID</label>
+                            <input type="text" class="form-input" placeholder="account_001">
+                        </div>
+                        <div class="form-group full-width" style="text-align: right;">
+                            <button class="btn btn-secondary">测试连接</button>
+                            <button class="btn btn-primary" style="margin-left: 8px;">保存</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-title">AD域对接配置</div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">域控制器</label>
+                            <input type="text" class="form-input" placeholder="dc.example.com">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">域名</label>
+                            <input type="text" class="form-input" placeholder="example.com">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">服务账号</label>
+                            <input type="text" class="form-input" placeholder="svc_asset@example.com">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">密码</label>
+                            <input type="password" class="form-input" placeholder="password">
+                        </div>
+                        <div class="form-group full-width" style="text-align: right;">
+                            <button class="btn btn-secondary">测试连接</button>
+                            <button class="btn btn-primary" style="margin-left: 8px;">保存</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-title">系统参数</div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">公司名称</label>
+                            <input type="text" class="form-input" value="某某科技有限公司">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">默认折旧年限（年）</label>
+                            <input type="text" class="form-input" value="5">
+                        </div>
+                        <div class="form-group full-width" style="text-align: right;">
+                            <button class="btn btn-primary">保存</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function showPage(pageId) {
+            // 隐藏所有页面
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            // 显示目标页面
+            document.getElementById('page-' + pageId).classList.add('active');
+            // 更新标题
+            const titles = {
+                'dashboard': '首页',
+                'assets': '资产卡片管理',
+                'categories': '资产分类管理',
+                'purchases': '采购入账管理',
+                'consumables': '消耗品管理',
+                'reports': '报表统计',
+                'settings': '系统设置'
+            };
+            document.getElementById('pageTitle').textContent = titles[pageId];
+            // 更新导航激活状态
+            document.querySelectorAll('.nav-item').forEach((item, index) => {
+                item.classList.remove('active');
+            });
+            event.target.classList.add('active');
+        }
+    </script>
+</body>
+</html>

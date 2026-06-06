@@ -1,0 +1,125 @@
+@page "/"
+@layout MainLayout
+
+<PageTitle>固定资产管理系统</PageTitle>
+
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h1>乐孜芯创 - 固定资产与消耗品管理系统</h1>
+            <p class="text-muted">资产全生命周期管理 | 从金蝶同步 | 扫码盘点</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- 资产概览卡片 -->
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h5 class="card-title">总资产</h5>
+                    <h2>@totalAssets</h2>
+                    <p class="card-text">在库: @inStock | 在用: @inUse | 维修: @underRepair</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 耗材概览 -->
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5 class="card-title">耗材种类</h5>
+                    <h2>@totalConsumables</h2>
+                    <p class="card-text">库存预警: @alertItems 种</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 盘点任务 -->
+        <div class="col-md-3">
+            <div class="card bg-warning text-dark">
+                <div class="card-body">
+                    <h5 class="card-title">进行中的盘点</h5>
+                    <h2>@activeChecks</h2>
+                    <p class="card-text">本月已完成: @completedChecks</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 待审批 -->
+        <div class="col-md-3">
+            <div class="card bg-danger text-white">
+                <div class="card-body">
+                    <h5 class="card-title">待审批</h5>
+                    <h2>@pendingApprovals</h2>
+                    <p class="card-text">领用/调拨/报废申请</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>快捷操作</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="/assets" class="btn btn-outline-primary">📦 资产台账</a>
+                        <a href="/consumables" class="btn btn-outline-success">🧴 耗材管理</a>
+                        <a href="/inventory" class="btn btn-outline-warning">📱 扫码盘点</a>
+                        <a href="/settings/kingdee" class="btn btn-outline-info">⚙️ 金蝶同步配置</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>最近动态</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        @foreach (var log in recentLogs)
+                        {
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                @log.Message
+                                <span class="badge bg-secondary">@log.Time</span>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private int totalAssets = 0;
+    private int inStock = 0;
+    private int inUse = 0;
+    private int underRepair = 0;
+    private int totalConsumables = 0;
+    private int alertItems = 0;
+    private int activeChecks = 0;
+    private int completedChecks = 0;
+    private int pendingApprovals = 0;
+
+    private List<ActivityLog> recentLogs = new()
+    {
+        new ActivityLog { Message = "系统初始化完成", Time = "刚刚" },
+        new ActivityLog { Message = "请配置金蝶API连接", Time = "待操作" }
+    };
+
+    protected override void OnInitialized()
+    {
+        // TODO: 从数据库加载统计数据
+    }
+
+    public class ActivityLog
+    {
+        public string Message { get; set; } = string.Empty;
+        public string Time { get; set; } = string.Empty;
+    }
+}

@@ -1,0 +1,176 @@
+@page "/users"
+@attribute [Authorize]
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<h3>用户管理</h3>
+
+@if (!isAdmin)
+{
+    <div class="alert alert-warning">您没有权限访问此页面。</div>
+}
+else
+{
+    <button class="btn btn-primary mb-3" @onclick="ShowCreateModal">+ 新建用户</button>
+    
+    @if (users == null)
+    {
+        <p>加载中...</p>
+    }
+    else if (!users.Any())
+    {
+        <p>暂无用户</p>
+    }
+    else
+    {
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>用户名</th>
+                    <th>权限</th>
+                    <th>创建时间</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var u in users)
+                {
+                    <tr>
+                        <td>@u.Id</td>
+                        <td>@u.Username</td>
+                        <td>@(u.IsAdmin ? "管理员" : "普通用户")</td>
+                        <td>@u.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</td>
+                        <td>
+                            @if (u.Id != 1)
+                            {
+                                <button class="btn btn-danger btn-sm" @onclick="() => DeleteUser(u.Id)">删除</button>
+                            }
+                            else
+                            {
+                                <span class="text-muted">不可删除</span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+}
+
+@if (showCreateModal)
+{
+    <div class="modal show d-block" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">新建用户</h5>
+                    <button type="button" class="btn-close" @onclick="CloseModal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">用户名</label>
+                        <input class="form-control" @bind="newUser.Username" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">密码</label>
+                        <input type="password" class="form-control" @bind="newUser.Password" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-check-label">
+                            <input type="checkbox" class="form-check-input" @bind="newUser.IsAdmin" />
+                            管理员权限
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="CloseModal">取消</button>
+                    <button class="btn btn-primary" @onclick="CreateUser">确定</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop show"></div>
+}
+
+@code {
+    private List<UserDto>? users;
+    private bool isAdmin = false;
+    private bool showCreateModal = false;
+    private CreateUserRequest newUser = new();
+
+    [CascadingParameter]
+    private Task<AuthenticationState>? authenticationState { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (authenticationState != null)
+        {
+            var authState = await authenticationState;
+            isAdmin = authState.User.HasClaim("is_admin", "true");
+        }
+        if (isAdmin)
+        {
+            await LoadUsers();
+        }
+    }
+
+    private async Task LoadUsers()
+    {
+        try
+        {
+            var response = await Http.GetFromJsonAsync<ApiResponse<List<UserDto>>>("api/users");
+            users = response?.Data ?? new List<UserDto>();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"加载失败: {ex.Message}");
+        }
+    }
+
+    private void ShowCreateModal()
+    {
+        newUser = new CreateUserRequest();
+        showCreateModal = true;
+    }
+
+    private void CloseModal() => showCreateModal = false;
+
+    private async Task CreateUser()
+    {
+        try
+        {
+            var response = await Http.PostAsJsonAsync("api/users", newUser);
+            if (response.IsSuccessStatusCode)
+            {
+                CloseModal();
+                await LoadUsers();
+            }
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                await JS.InvokeVoidAsync("alert", $"创建失败: {error}");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"请求出错: {ex.Message}");
+        }
+    }
+
+    private async Task DeleteUser(int id)
+    {
+        if (!await JS.InvokeAsync<bool>("confirm", "确定删除该用户？")) return;
+        try
+        {
+            var response = await Http.DeleteAsync($"api/users/{id}");
+            if (response.IsSuccessStatusCode)
+                await LoadUsers();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"删除失败: {ex.Message}");
+        }
+    }
+}

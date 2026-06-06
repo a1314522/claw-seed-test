@@ -1,0 +1,60 @@
+<UserControl x:Class="AssetManagementSystem.Desktop.Views.ReportPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:AssetManagementSystem.Desktop.ViewModels"
+             Background="{DynamicResource BackgroundBrush}"
+>
+    <UserControl.DataContext>
+        <vm:ReportViewModel/>
+    </UserControl.DataContext>
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="24">
+            <TextBlock Text="报表统计" FontSize="24" FontWeight="Bold" Foreground="{DynamicResource ForegroundBrush}" Margin="0,0,0,16"/>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <Border Grid.Column="0" Grid.Row="0" Style="{StaticResource CardStyle}" Margin="0,0,12,12">
+                    <StackPanel Margin="16">
+                        <TextBlock Text="按部门统计" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource ForegroundBrush}" Margin="0,0,0,12"/>
+                        <DataGrid ItemsSource="{Binding DepartmentStats}" AutoGenerateColumns="False" IsReadOnly="True" GridLinesVisibility="Horizontal" BorderThickness="0" Background="Transparent">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="部门" Binding="{Binding Department}" Width="*"/>
+                                <DataGridTextColumn Header="资产数量" Binding="{Binding Count}" Width="100"/>
+                                <DataGridTextColumn Header="原值合计" Binding="{Binding TotalValue, StringFormat=C}" Width="120"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </StackPanel>
+                </Border>
+                <Border Grid.Column="1" Grid.Row="0" Style="{StaticResource CardStyle}" Margin="0,0,0,12">
+                    <StackPanel Margin="16">
+                        <TextBlock Text="按分类统计" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource ForegroundBrush}" Margin="0,0,0,12"/>
+                        <DataGrid ItemsSource="{Binding CategoryStats}" AutoGenerateColumns="False" IsReadOnly="True" GridLinesVisibility="Horizontal" BorderThickness="0" Background="Transparent">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="分类" Binding="{Binding Category}" Width="*"/>
+                                <DataGridTextColumn Header="资产数量" Binding="{Binding Count}" Width="100"/>
+                                <DataGridTextColumn Header="原值合计" Binding="{Binding TotalValue, StringFormat=C}" Width="120"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </StackPanel>
+                </Border>
+                <Border Grid.Column="0" Grid.Row="1" Grid.ColumnSpan="2" Style="{StaticResource CardStyle}" Margin="0,0,0,12">
+                    <StackPanel Margin="16">
+                        <TextBlock Text="资产状态分布" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource ForegroundBrush}" Margin="0,0,0,12"/>
+                        <DataGrid ItemsSource="{Binding StatusStats}" AutoGenerateColumns="False" IsReadOnly="True" GridLinesVisibility="Horizontal" BorderThickness="0" Background="Transparent">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="状态" Binding="{Binding Status}" Width="*"/>
+                                <DataGridTextColumn Header="数量" Binding="{Binding Count}" Width="100"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

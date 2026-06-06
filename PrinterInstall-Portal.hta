@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>企业打印机自助安装平台</title>
+<HTA:APPLICATION
+    ID="PrinterInstaller"
+    APPLICATIONNAME="打印机安装平台"
+    BORDER="thin"
+    BORDERSTYLE="normal"
+    CAPTION="yes"
+    ICON=""
+    MAXIMIZEBUTTON="no"
+    MINIMIZEBUTTON="yes"
+    SHOWINTASKBAR="yes"
+    SINGLEINSTANCE="yes"
+    SYSMENU="yes"
+    VERSION="1.0"
+    WINDOWSTATE="normal"
+    INNERBORDER="no"
+    SCROLL="no"
+    SELECTION="no"
+/>
+<style>
+* { margin: 0; padding: 0; font-family: "Microsoft YaHei", "Segoe UI", sans-serif; }
+body { background: #1a1a2e; color: #fff; }
+.container { max-width: 900px; margin: 0 auto; padding: 30px; }
+.header { text-align: center; padding-bottom: 25px; border-bottom: 1px solid #333; margin-bottom: 25px; }
+.header h1 { font-size: 26px; margin-bottom: 8px; color: #e94560; }
+.header p { color: #aaa; font-size: 14px; }
+.location-group { margin-bottom: 20px; }
+.location-title { font-size: 18px; color: #ffd700; margin-bottom: 12px; padding-left: 10px; border-left: 3px solid #e94560; }
+.printer-grid { overflow: hidden; }
+.printer-card {
+    float: left;
+    width: 260px;
+    margin: 0 12px 12px 0;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid #333;
+    border-radius: 10px;
+    padding: 16px;
+    cursor: pointer;
+    position: relative;
+}
+.printer-card-selected {
+    background: rgba(233,69,96,0.25);
+    border-color: #e94560;
+}
+.printer-card .id { position: absolute; top: 10px; right: 12px; font-size: 12px; color: #666; }
+.printer-card .name { font-size: 15px; font-weight: bold; margin-bottom: 6px; color: #fff; }
+.printer-card .meta { font-size: 12px; color: #aaa; line-height: 1.6; }
+.printer-card .meta span { margin-right: 10px; }
+.brand-hp { color: #0096d6; }
+.brand-sharp { color: #e94560; }
+.actions { margin-top: 25px; text-align: center; clear: both; }
+.btn {
+    display: inline-block;
+    padding: 12px 36px;
+    border: none;
+    border-radius: 6px;
+    font-size: 15px;
+    cursor: pointer;
+    margin: 0 8px;
+}
+.btn-install { background: #e94560; color: #fff; }
+.btn-install-disabled { background: #555; cursor: not-allowed; }
+.btn-all { background: #533483; color: #fff; }
+.log-panel {
+    margin-top: 20px;
+    background: #111;
+    border-radius: 8px;
+    padding: 15px;
+    min-height: 180px;
+    font-family: Consolas, monospace;
+    font-size: 13px;
+    line-height: 1.5;
+    color: #aaa;
+    overflow-y: auto;
+    max-height: 350px;
+}
+.status-bar {
+    margin-top: 15px;
+    text-align: center;
+    font-size: 13px;
+    color: #888;
+}
+</style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>企业打印机自助安装平台</h1>
+        <p>选择下方打印机，点击安装。需要管理员权限。</p>
+    </div>
+
+    <div id="printerList"></div>
+
+    <div class="actions">
+        <button class="btn btn-install btn-install-disabled" id="btnInstall" onclick="installSelected()" disabled>安装选中打印机</button>
+        <button class="btn btn-all" id="btnAll" onclick="installAll()">一键安装全部</button>
+    </div>
+
+    <div class="log-panel" id="logPanel">
+        <div>等待操作...</div>
+    </div>
+
+    <div class="status-bar" id="statusBar">就绪 | 共 8 台打印机配置</div>
+</div>
+
+<script language="javascript">
+// ===== IE兼容辅助函数 =====
+function pad2(n) {
+    return n < 10 ? "0" + n : "" + n;
+}
+
+function hasClass(el, cls) {
+    if (!el || !el.className) return false;
+    return (" " + el.className + " ").indexOf(" " + cls + " ") > -1;
+}
+
+function addClass(el, cls) {
+    if (!el) return;
+    if (!hasClass(el, cls)) el.className += (el.className ? " " : "") + cls;
+}
+
+function removeClass(el, cls) {
+    if (!el || !el.className) return;
+    var re = new RegExp("(^|\\s+)" + cls + "(\\s+|$)", "g");
+    el.className = el.className.replace(re, " ").replace(/\s+/g, " ").replace(/^\s+|\s+$/g, "");
+}
+
+function getElementsByCls(cls) {
+    var all = document.getElementsByTagName("*");
+    var res = [];
+    for (var i = 0; i < all.length; i++) {
+        if (hasClass(all[i], cls)) res.push(all[i]);
+    }
+    return res;
+}
+
+// ===== 打印机配置数据库 =====
+var printers = [
+    { id: 1, location: "康桥", floor: "1F", name: "财务办公室", ip: "192.168.10.146", driver: "HP LaserJet Pro MFP 4101 4102 4103 4104 PCL 6 (V3)", inf: "\\\\192.168.10.247\\Share\\Share Disk\\软件安装包\\打印机\\财务办公室打印机驱动\\hplo0374_x64.inf", brand: "HP", lockBW: false },
+    { id: 2, location: "康桥", floor: "1F", name: "销售办公室", ip: "192.168.10.210", driver: "SHARP MX-C4082R PCL6", inf: "\\\\192.168.10.247\\Share\\Share Disk\\软件安装包\\打印机\\租用打印机驱动\\Chinese1\\Chinese1\\PCL6\\64bit\\su2emchs.inf", brand: "SHARP", lockBW: true },
+    { id: 3, location: "康桥", floor: "2F", name: "SV办公室", ip: "172.168.150.27", driver: "HP Color LaserJet Pro MFP M377 PCL 6", inf: "\\\\192.168.10.247\\Share\\Share Disk\\软件安装包\\打印机\\sv办公室打印机驱动\\hpne862A_x64.inf", brand: "HP", lockBW: false },
+    { id: 4, location: "康桥", floor: "2F", name: "人事办公室", ip: "172.168.150.46", driver: "SHARP MX-C4082R PCL6", inf: "\\\\192.168.10.247\\Share\\Share Disk\\软件安装包\\打印机\\租用打印机驱动\\Chinese1\\Chinese1\\PCL6\\64bit\\su2emchs.inf", brand: "SHARP", lockBW: true },
+    { id: 5, location: "康桥", floor: "2F", name: "研发办公室", ip: "172.168.150.22", driver: "SHARP MX-C2622R PCL6", inf: "\\\\192.168.10.247\\Share\\Share Disk\\软件安装包\\打印机\\01.二楼研发打印机驱动\\Chinese1\\PCL6\\64bit\\su2emchs.inf", brand: "SHARP", lockBW: true },
+    { id: 6, location: "临港", floor: "1F", name: "缓冲间", ip: "192.168.112.102", driver: "SHARP MX-C4082R PCL6", inf: "\\\\192.168.10.247\\Share\\Share Disk\\软件安装包\\打印机\\租用打印机驱动\\Chinese1\\Chinese1\\PCL6\\64bit\\su2emchs.inf", brand: "SHARP", lockBW: true },
+    { id: 7, location: "临港", floor: "2F", name: "仓库", ip: "192.168.120.90", driver: "SHARP MX-C4082R PCL6", inf: "\\\\192.168.10.247\\Share\\Share Disk\\软件安装包\\打印机\\租用打印机驱动\\Chinese1\\Chinese1\\PCL6\\64bit\\su2emchs.inf", brand: "SHARP", lockBW: true },
+    { id: 8, location: "临港", floor: "2F", name: "采购办公室", ip: "192.168.112.248", driver: "SHARP MX-C4082R PCL6", inf: "\\\\192.168.10.247\\Share\\Share Disk\\软件安装包\\打印机\\租用打印机驱动\\Chinese1\\Chinese1\\PCL6\\64bit\\su2emchs.inf", brand: "SHARP", lockBW: true }
+];
+
+var selectedId = null;
+var fso = new ActiveXObject("Scripting.FileSystemObject");
+var shell = new ActiveXObject("WScript.Shell");
+var tempFolder = fso.GetSpecialFolder(2);
+
+function renderList() {
+    var container = document.getElementById("printerList");
+    var html = "";
+    var locations = {};
+    
+    for (var i = 0; i < printers.length; i++) {
+        var p = printers[i];
+        if (!locations[p.location]) locations[p.location] = [];
+        locations[p.location].push(p);
+    }
+    
+    for (var loc in locations) {
+        html += '<div class="location-group">';
+        html += '<div class="location-title">【' + loc + '】</div>';
+        html += '<div class="printer-grid">';
+        var group = locations[loc];
+        for (var j = 0; j < group.length; j++) {
+            var p = group[j];
+            var brandClass = p.brand === "HP" ? "brand-hp" : "brand-sharp";
+            html += '<div class="printer-card" id="card-' + p.id + '" onclick="selectPrinter(' + p.id + ')">';
+            html += '<span class="id">#' + p.id + '</span>';
+            html += '<div class="name">' + p.location + '-' + p.floor + p.name + '</div>';
+            html += '<div class="meta">';
+            html += '<span class="' + brandClass + '">' + p.brand + '</span>';
+            html += '<span>IP: ' + p.ip + '</span>';
+            if (p.lockBW) html += '<span style="color:#ffaa00">黑白单面锁定</span>';
+            html += '</div></div>';
+        }
+        html += '<div style="clear:both"></div></div></div>';
+    }
+    container.innerHTML = html;
+}
+
+function selectPrinter(id) {
+    var cards = getElementsByCls("printer-card");
+    for (var i = 0; i < cards.length; i++) {
+        removeClass(cards[i], "printer-card-selected");
+    }
+    var card = document.getElementById("card-" + id);
+    if (card) addClass(card, "printer-card-selected");
+    
+    selectedId = id;
+    var btn = document.getElementById("btnInstall");
+    btn.disabled = false;
+    removeClass(btn, "btn-install-disabled");
+    btn.innerText = "安装选中打印机 (ID: " + id + ")";
+    
+    var p = getPrinterById(id);
+    log("已选择: " + p.location + "-" + p.floor + p.name, "#888");
+}
+
+function getPrinterById(id) {
+    for (var i = 0; i < printers.length; i++) {
+        if (printers[i].id === id) return printers[i];
+    }
+    return null;
+}
+
+function log(msg, color) {
+    var panel = document.getElementById("logPanel");
+    var div = document.createElement("div");
+    if (color) div.style.color = color;
+    var now = new Date();
+    var time = pad2(now.getHours()) + ":" + pad2(now.getMinutes()) + ":" + pad2(now.getSeconds());
+    div.innerHTML = "[" + time + "] " + msg;
+    panel.appendChild(div);
+    panel.scrollTop = panel.scrollHeight;
+}
+
+function clearLog() {
+    document.getElementById("logPanel").innerHTML = "";
+}
+
+function writeTempFile(content, suffix) {
+    var path = tempFolder + "\\printer_" + suffix + ".ps1";
+    var f = fso.CreateTextFile(path, true);
+    f.Write(content);
+    f.Close();
+    return path;
+}
+
+function readLogFile(path) {
+    if (!fso.FileExists(path)) return "";
+    var f = fso.OpenTextFile(path, 1, false);
+    var content = "";
+    try {
+        content = f.ReadAll();
+    } catch(e) {}
+    f.Close();
+    return content;
+}
+
+function cleanup(files) {
+    for (var i = 0; i < files.length; i++) {
+        try { if (fso.FileExists(files[i])) fso.DeleteFile(files[i]); } catch(e) {}
+    }
+}
+
+function buildPSScript(p) {
+    var lines = [];
+    lines.push("$ErrorActionPreference = 'Stop'");
+    lines.push("$VerbosePreference = 'Continue'");
+    lines.push("");
+    lines.push("$printerIP   = '" + p.ip + "'");
+    lines.push("$portName    = 'IP_' + $printerIP");
+    lines.push("$printerName = '" + p.location + "-" + p.floor + p.name + "打印机'");
+    lines.push("$driverName  = '" + p.driver.replace(/'/g, "''") + "'");
+    lines.push("$preferredInf = '" + p.inf.replace(/\\/g, "\\\\").replace(/'/g, "''") + "'");
+    lines.push("$searchRoot   = '\\\\192.168.10.247\\Share\\Share Disk\\软件安装包\\打印机'");
+    lines.push("$lockBW       = $" + (p.lockBW ? "true" : "false"));
+    lines.push("");
+    lines.push("function Write-Step($msg) { Write-Host ('[ ' + (Get-Date -Format 'HH:mm:ss') + ' ] ' + $msg) }");
+    lines.push("");
+    lines.push("Write-Step '========================================'");
+    lines.push("Write-Step ('开始安装: ' + $printerName)");
+    lines.push("Write-Step ('IP: ' + $printerIP)");
+    lines.push("Write-Step ('驱动: ' + $driverName)");
+    lines.push("Write-Step '========================================'");
+    lines.push("");
+    lines.push("# --- 检查管理员权限 ---");
+    lines.push("$currentPrincipal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())");
+    lines.push("if (-not $currentPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {");
+    lines.push("    Write-Step '[ERROR] 需要管理员权限！请右键以管理员身份运行此程序。'");
+    lines.push("    exit 100");
+    lines.push("}");
+    lines.push("Write-Step '[OK] 管理员权限确认通过'");
+    lines.push("");
+    lines.push("# --- 自动搜索驱动文件 ---");
+    lines.push("$infPath = $preferredInf");
+    lines.push("if (-not (Test-Path $infPath)) {");
+    lines.push("    Write-Step ('[WARN] 首选路径不存在: ' + $infPath)");
+    lines.push("    Write-Step '[INFO] 开始自动搜索驱动文件...'");
+    lines.push("    $knownMap = @{");
+    lines.push("        'SHARP MX-C4082R PCL6' = @('su2emchs.inf');");
+    lines.push("        'SHARP MX-C2622R PCL6' = @('su2emchs.inf');");
+    lines.push("        'HP LaserJet Pro MFP 4101 4102 4103 4104 PCL 6 (V3)' = @('hplo0374_x64.inf','hplo*.inf');");
+    lines.push("        'HP Color LaserJet Pro MFP M377 PCL 6' = @('hpne862A_x64.inf','hpne*.inf')");
+    lines.push("    }");
+    lines.push("    $patterns = $knownMap[$driverName]");
+    lines.push("    if ($patterns -and (Test-Path $searchRoot)) {");
+    lines.push("        foreach ($pattern in $patterns) {");
+    lines.push("            $found = Get-ChildItem -Path $searchRoot -Filter $pattern -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1");
+    lines.push("            if ($found) { $infPath = $found.FullName; break }");
+    lines.push("        }");
+    lines.push("    }");
+    lines.push("    if (-not (Test-Path $infPath)) {");
+    lines.push("        # 兜底：搜索所有.inf内容匹配");
+    lines.push("        if (Test-Path $searchRoot) {");
+    lines.push("            $allInf = Get-ChildItem -Path $searchRoot -Filter '*.inf' -Recurse -ErrorAction SilentlyContinue");
+    lines.push("            foreach ($inf in $allInf) {");
+    lines.push("                try {");
+    lines.push("                    $content = Get-Content $inf.FullName -ErrorAction Stop -Raw");
+    lines.push("                    if ($content -match [regex]::Escape($driverName)) {");
+    lines.push("                        $infPath = $inf.FullName; break");
+    lines.push("                    }");
+    lines.push("                } catch { continue }");
+    lines.push("            }");
+    lines.push("        }");
+    lines.push("    }");
+    lines.push("}");
+    lines.push("if (-not (Test-Path $infPath)) {");
+    lines.push("    Write-Step ('[ERROR] 找不到驱动文件！请检查网络路径可访问: ' + $searchRoot)");
+    lines.push("    exit 101");
+    lines.push("}");
+    lines.push("Write-Step ('[OK] 驱动文件: ' + $infPath)");
+    lines.push("");
+    lines.push("# --- 步骤1: 创建TCP/IP端口 ---");
+    lines.push("try {");
+    lines.push("    if (-not (Get-PrinterPort -Name $portName -ErrorAction SilentlyContinue)) {");
+    lines.push("        Add-PrinterPort -Name $portName -PrinterHostAddress $printerIP");
+    lines.push("        Write-Step '[OK] 端口创建成功'");
+    lines.push("    } else {");
+    lines.push("        Write-Step '[OK] 端口已存在，跳过'");
+    lines.push("    }");
+    lines.push("} catch {");
+    lines.push("    Write-Step ('[ERROR] 端口创建失败: ' + $_.Exception.Message)");
+    lines.push("    exit 201");
+    lines.push("}");
+    lines.push("");
+    lines.push("# --- 步骤2: 注入驱动 ---");
+    lines.push("try {");
+    lines.push("    $pnpResult = pnputil.exe /add-driver $infPath /install 2>&1");
+    lines.push("    if ($LASTEXITCODE -ne 0 -and $LASTEXITCODE -ne 3010) {");
+    lines.push("        Write-Step ('[WARN] PNPUtil警告(代码' + $LASTEXITCODE + '): ' + ($pnpResult -join ';'))");
+    lines.push("    } else {");
+    lines.push("        Write-Step '[OK] 驱动注入成功'");
+    lines.push("    }");
+    lines.push("} catch {");
+    lines.push("    Write-Step ('[ERROR] 驱动注入失败: ' + $_.Exception.Message)");
+    lines.push("    exit 202");
+    lines.push("}");
+    lines.push("");
+    lines.push("# --- 步骤3: 注册驱动 ---");
+    lines.push("try {");
+    lines.push("    if (-not (Get-PrinterDriver -Name $driverName -ErrorAction SilentlyContinue)) {");
+    lines.push("        Add-PrinterDriver -Name $driverName");
+    lines.push("        Write-Step '[OK] 驱动注册成功'");
+    lines.push("    } else {");
+    lines.push("        Write-Step '[OK] 驱动已注册，跳过'");
+    lines.push("    }");
+    lines.push("} catch {");
+    lines.push("    Write-Step ('[ERROR] 驱动注册失败: ' + $_.Exception.Message)");
+    lines.push("    exit 203");
+    lines.push("}");
+    lines.push("");
+    lines.push("# --- 步骤4: 创建打印机 ---");
+    lines.push("try {");
+    lines.push("    if (-not (Get-Printer -Name $printerName -ErrorAction SilentlyContinue)) {");
+    lines.push("        Add-Printer -Name $printerName -DriverName $driverName -PortName $portName");
+    lines.push("        Write-Step '[OK] 打印机创建成功'");
+    lines.push("    } else {");
+    lines.push("        Write-Step '[OK] 打印机已存在，跳过'");
+    lines.push("    }");
+    lines.push("} catch {");
+    lines.push("    Write-Step ('[ERROR] 打印机创建失败: ' + $_.Exception.Message)");
+    lines.push("    exit 204");
+    lines.push("}");
+    lines.push("");
+    lines.push("# --- 步骤5: 夏普专用黑白单面锁定 ---");
+    lines.push("if ($lockBW) {");
+    lines.push("    try {");
+    lines.push("        Set-PrintConfiguration -PrinterName $printerName -Color $false -DuplexingMode OneSided -ErrorAction Stop");
+    lines.push("        Write-Step '[OK] 黑白单面配置成功(A方案)'");
+    lines.push("    } catch {");
+    lines.push("        Write-Step '[WARN] A方案失败，尝试B方案...'");
+    lines.push("        try {");
+    lines.push("            $config = Get-PrintConfiguration -PrinterName $printerName");
+    lines.push("            $config.Color = $false");
+    lines.push("            $config.DuplexingMode = 'OneSided'");
+    lines.push("            Set-PrintConfiguration -InputObject $config");
+    lines.push("            Write-Step '[OK] 黑白单面配置成功(B方案)'");
+    lines.push("        } catch {");
+    lines.push("            Write-Step ('[WARN] B方案也失败: ' + $_.Exception.Message)");
+    lines.push("        }");
+    lines.push("    }");
+    lines.push("    $regPath = 'HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Print\\Printers\\' + $printerName + '\\PrinterDriverData'");
+    lines.push("    if (Test-Path $regPath) {");
+    lines.push("        Set-ItemProperty -Path $regPath -Name 'Duplex' -Value 1 -ErrorAction SilentlyContinue");
+    lines.push("        Set-ItemProperty -Path $regPath -Name 'ColorMode' -Value 1 -ErrorAction SilentlyContinue");
+    lines.push("        Write-Step '[OK] 注册表加固完成'");
+    lines.push("    }");
+    lines.push("}");
+    lines.push("");
+    lines.push("Write-Step '========================================'");
+    lines.push("Write-Step ('安装完成: ' + $printerName)");
+    lines.push("Write-Step '========================================'");
+    lines.push("exit 0");
+    return lines.join("\r\n");
+}
+
+function runPSScript(scriptContent, suffix) {
+    var psFile = writeTempFile(scriptContent, suffix);
+    var logFile = tempFolder + "\\printer_" + suffix + ".log";
+    
+    var cmd = 'powershell.exe -ExecutionPolicy Bypass -File "' + psFile + '" > "' + logFile + '" 2>&1';
+    log("执行临时脚本: " + suffix + ".ps1", "#666");
+    
+    var result = shell.Run(cmd, 0, true);
+    
+    var output = readLogFile(logFile);
+    var lines = output.split("\r\n");
+    for (var i = 0; i < lines.length; i++) {
+        var line = lines[i].replace(/^\s+|\s+$/g, "");
+        if (!line) continue;
+        var color = "#aaa";
+        if (line.indexOf("[ERROR]") >= 0) color = "#ff4444";
+        else if (line.indexOf("[WARN]") >= 0) color = "#ffaa00";
+        else if (line.indexOf("[OK]") >= 0) color = "#00ff88";
+        else if (line.indexOf("===") >= 0) color = "#0096d6";
+        log(line, color);
+    }
+    
+    cleanup([psFile, logFile]);
+    return result;
+}
+
+function installSelected() {
+    if (!selectedId) return;
+    clearLog();
+    var p = getPrinterById(selectedId);
+    log("开始安装: " + p.location + "-" + p.floor + p.name, "#0096d6");
+    
+    var script = buildPSScript(p);
+    var result = runPSScript(script, "p" + p.id);
+    
+    if (result === 0) {
+        log("安装成功完成！", "#00ff88");
+    } else if (result === 100) {
+        log("失败原因: 未以管理员权限运行。请右键→以管理员身份运行此HTA。", "#ff4444");
+    } else if (result === 101) {
+        log("失败原因: 找不到驱动文件。请检查网络共享路径是否可访问。", "#ff4444");
+    } else if (result === 201) {
+        log("失败原因: 打印机端口创建失败。", "#ff4444");
+    } else if (result === 202) {
+        log("失败原因: 驱动注入失败。可能是inf文件损坏或不兼容。", "#ff4444");
+    } else if (result === 203) {
+        log("失败原因: 驱动注册失败。驱动名称可能不匹配inf中的定义。", "#ff4444");
+    } else if (result === 204) {
+        log("失败原因: 打印机创建失败。", "#ff4444");
+    } else {
+        log("安装失败，返回代码: " + result + " (未知错误)", "#ff4444");
+    }
+}
+
+function installAll() {
+    clearLog();
+    log("开始批量安装全部 " + printers.length + " 台打印机...", "#ffaa00");
+    
+    var success = 0, fail = 0;
+    for (var i = 0; i < printers.length; i++) {
+        var p = printers[i];
+        log("========================================", "#0096d6");
+        log("[ " + (i+1) + "/" + printers.length + " ] " + p.location + "-" + p.floor + p.name, "#0096d6");
+        log("========================================", "#0096d6");
+        
+        var script = buildPSScript(p);
+        var result = runPSScript(script, "p" + p.id);
+        
+        if (result === 0) {
+            success++;
+        } else {
+            fail++;
+            log("该打印机安装失败(代码" + result + ")，继续下一台...", "#ff4444");
+        }
+    }
+    
+    log("========================================", "#0096d6");
+    log("批量安装完成: 成功 " + success + " 台, 失败 " + fail + " 台", fail === 0 ? "#00ff88" : "#ffaa00");
+    log("========================================", "#0096d6");
+}
+
+// 初始化
+renderList();
+</script>
+</body>
+</html>

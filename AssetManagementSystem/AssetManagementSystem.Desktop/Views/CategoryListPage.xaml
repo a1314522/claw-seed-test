@@ -1,0 +1,38 @@
+<UserControl x:Class="AssetManagementSystem.Desktop.Views.CategoryListPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:AssetManagementSystem.Desktop.ViewModels"
+             Background="{DynamicResource BackgroundBrush}"
+>
+    <UserControl.DataContext>
+        <vm:CategoryListViewModel/>
+    </UserControl.DataContext>
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <TextBlock Grid.Row="0" Text="资产分类管理" FontSize="24" FontWeight="Bold" Foreground="{DynamicResource ForegroundBrush}" Margin="0,0,0,16"/>
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,12">
+            <Button Content="➕ 新增分类" Command="{Binding AddCategoryCommand}" Style="{StaticResource PrimaryButtonStyle}" Margin="0,0,8,0"/>
+            <Button Content="🗑️ 删除选中" Command="{Binding DeleteCategoryCommand}" Style="{StaticResource SecondaryButtonStyle}"/>
+        </StackPanel>
+        <Border Grid.Row="2" Style="{StaticResource CardStyle}">
+            <TreeView ItemsSource="{Binding Categories}" BorderThickness="0" Background="Transparent">
+                <TreeView.ItemTemplate>
+                    <HierarchicalDataTemplate ItemsSource="{Binding Children}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="{Binding Name}" FontSize="14" Foreground="{DynamicResource ForegroundBrush}"/>
+                            <TextBlock Margin="8,0,0,0" Foreground="{DynamicResource MutedBrush}">
+                                <TextBlock.Text>
+                                    <Binding Path="AssetCount" StringFormat=" {0} 件"/>
+                                </TextBlock.Text>
+                            </TextBlock>
+                        </StackPanel>
+                    </HierarchicalDataTemplate>
+                </TreeView.ItemTemplate>
+            </TreeView>
+        </Border>
+    </Grid>
+</UserControl>

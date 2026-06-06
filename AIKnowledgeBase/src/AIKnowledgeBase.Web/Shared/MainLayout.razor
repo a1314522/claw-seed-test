@@ -1,0 +1,47 @@
+@inherits LayoutComponentBase
+
+<div class="page">
+    @if (!IsLoginPage)
+    {
+        <div class="sidebar">
+            <NavMenu />
+        </div>
+    }
+
+    <main class="main-content">
+        @if (!IsLoginPage)
+        {
+            <div class="top-row px-4">
+                <span class="text-muted">@CurrentUser</span>
+                @if (!string.IsNullOrEmpty(CurrentUser))
+                {
+                    <button class="btn btn-link text-danger" @onclick="Logout">退出</button>
+                }
+            </div>
+        }
+
+        <article class="content px-4">
+            @Body
+        </article>
+    </main>
+</div>
+
+<div id="blazor-error-ui">
+    发生错误，请刷新页面重试。
+    <a href="" class="reload">刷新</a>
+    <a class="dismiss">🗙</a>
+</div>
+
+@code {
+    [Inject] private NavigationManager Navigation { get; set; } = default!;
+    [Inject] private AuthService AuthService { get; set; } = default!;
+
+    private bool IsLoginPage => Navigation.Uri.Contains("/login") || Navigation.Uri.EndsWith("/login");
+    private string CurrentUser => AuthService.CurrentUser?.Username ?? "";
+
+    private void Logout()
+    {
+        AuthService.Logout();
+        Navigation.NavigateTo("/login", true);
+    }
+}

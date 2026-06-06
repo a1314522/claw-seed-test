@@ -1,0 +1,203 @@
+@page "/inventory"
+@layout MainLayout
+
+<PageTitle>扫码盘点</PageTitle>
+
+<div class="container">
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <h2>📱 资产扫码盘点</h2>
+            <p class="text-muted">使用手机摄像头或扫码枪扫描资产二维码，实时比对人账差异</p>
+        </div>
+    </div>
+
+    @if (currentCheck == null)
+    {
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>选择盘点任务</h5>
+                    </div>
+                    <div class="card-body">
+                        @if (inventoryChecks.Any())
+                        {
+                            <ul class="list-group">
+                                @foreach (var check in inventoryChecks)
+                                {
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong>@check.Name</strong>
+                                            <br />
+                                            <small class="text-muted">@check.Scope | @check.Status</small>
+                                        </div>
+                                        <button class="btn btn-primary" @onclick="() => StartCheck(check)">开始盘点</button>
+                                    </li>
+                                }
+                            </ul>
+                        }
+                        else
+                        {
+                            <p class="text-muted">暂无进行中的盘点任务</p>
+                            <a href="/inventory/create" class="btn btn-success">创建盘点任务</a>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5>@currentCheck.Name - 盘点中</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">扫描资产编码</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" @bind="scanInput" @bind:event="oninput" @onkeypress="HandleKeyPress" placeholder="请扫描或输入资产编码..." />
+                                <button class="btn btn-success" @onclick="ScanAsset">确认</button>
+                            </div>
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(scanResult))
+                        {
+                            <div class="alert @(scanSuccess ? "alert-success" : "alert-warning")" role="alert">
+                                @scanResult
+                            </div>
+                        }
+
+                        <div class="mt-4">
+                            <h6>盘点进度</h6>
+                            <div class="progress">
+                                <div class="progress-bar" role="progressbar" style="width: @(GetProgressPercent())%">
+                                    @checkedCount / @totalCount
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h6>盘点统计</h6>
+                    </div>
+                    <div class="card-body">
+                        <p>总数量: <strong>@totalCount</strong></p>
+                        <p>已盘点: <span class="text-success">@checkedCount</span></p>
+                        <p>正常: <span class="text-success">@normalCount</span></p>
+                        <p>盘亏: <span class="text-danger">@shortageCount</span></p>
+                        <p>未盘: <span class="text-muted">@(totalCount - checkedCount)</span></p>
+                    </div>
+                </div>
+
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h6>未盘点资产</h6>
+                    </div>
+                    <div class="card-body" style="max-height: 300px; overflow-y: auto;">
+                        @if (uncheckedItems.Any())
+                        {
+                            <ul class="list-group list-group-flush">
+                                @foreach (var item in uncheckedItems)
+                                {
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <small>@item.AssetCode<br/>@item.AssetName</small>
+                                        <button class="btn btn-sm btn-outline-danger" @onclick="() => MarkMissing(item)">盘亏</button>
+                                    </li>
+                                }
+                            </ul>
+                        }
+                        else
+                        {
+                            <p class="text-muted text-center">全部已盘点</p>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private List<InventoryCheckDto> inventoryChecks = new();
+    private InventoryCheckDto? currentCheck = null;
+    private string scanInput = "";
+    private string scanResult = "";
+    private bool scanSuccess = false;
+
+    private int totalCount = 100;
+    private int checkedCount = 0;
+    private int normalCount = 0;
+    private int shortageCount = 0;
+
+    private List<UncheckedItem> uncheckedItems = new()
+    {
+        new UncheckedItem { AssetCode = "PC-202506-0001", AssetName = "联想ThinkPad T14" },
+        new UncheckedItem { AssetCode = "PR-202506-0002", AssetName = "HP LaserJet Pro" },
+        new UncheckedItem { AssetCode = "NW-202506-0005", AssetName = "H3C交换机 S5120" }
+    };
+
+    protected override void OnInitialized()
+    {
+        // TODO: 加载盘点任务列表
+    }
+
+    private void StartCheck(InventoryCheckDto check)
+    {
+        currentCheck = check;
+    }
+
+    private void HandleKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            ScanAsset();
+        }
+    }
+
+    private void ScanAsset()
+    {
+        if (string.IsNullOrEmpty(scanInput)) return;
+
+        // TODO: 调用API验证资产
+        scanSuccess = true;
+        scanResult = $"✅ 盘点成功: {scanInput} - 联想ThinkPad T14";
+        checkedCount++;
+        normalCount++;
+        scanInput = "";
+    }
+
+    private void MarkMissing(UncheckedItem item)
+    {
+        shortageCount++;
+        uncheckedItems.Remove(item);
+        scanResult = $"⚠️ 标记盘亏: {item.AssetCode}";
+        scanSuccess = false;
+    }
+
+    private double GetProgressPercent()
+    {
+        if (totalCount == 0) return 0;
+        return (double)checkedCount / totalCount * 100;
+    }
+
+    public class InventoryCheckDto
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string Scope { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty;
+    }
+
+    public class UncheckedItem
+    {
+        public string AssetCode { get; set; } = string.Empty;
+        public string AssetName { get; set; } = string.Empty;
+    }
+}

@@ -1,0 +1,68 @@
+<UserControl x:Class="AssetManagementSystem.Desktop.Views.DashboardPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:AssetManagementSystem.Desktop.ViewModels"
+             Background="{DynamicResource BackgroundBrush}">
+    <UserControl.DataContext>
+        <vm:DashboardViewModel/>
+    </UserControl.DataContext>
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="24">
+            <TextBlock Text="概览统计" FontSize="24" FontWeight="Bold" Foreground="{DynamicResource ForegroundBrush}" Margin="0,0,0,20"/>
+            
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                
+                <Border Grid.Column="0" Style="{StaticResource CardStyle}" Margin="0,0,12,12">
+                    <StackPanel Margin="16">
+                        <TextBlock Text="总资产数" FontSize="14" Foreground="{DynamicResource MutedBrush}"/>
+                        <TextBlock Text="{Binding TotalAssets}" FontSize="32" FontWeight="Bold" Foreground="{DynamicResource PrimaryBrush}" Margin="0,8,0,0"/>
+                    </StackPanel>
+                </Border>
+                <Border Grid.Column="1" Style="{StaticResource CardStyle}" Margin="0,0,12,12">
+                    <StackPanel Margin="16">
+                        <TextBlock Text="在用资产" FontSize="14" Foreground="{DynamicResource MutedBrush}"/>
+                        <TextBlock Text="{Binding InUseAssets}" FontSize="32" FontWeight="Bold" Foreground="Green" Margin="0,8,0,0"/>
+                    </StackPanel>
+                </Border>
+                <Border Grid.Column="2" Style="{StaticResource CardStyle}" Margin="0,0,12,12">
+                    <StackPanel Margin="16">
+                        <TextBlock Text="维修中" FontSize="14" Foreground="{DynamicResource MutedBrush}"/>
+                        <TextBlock Text="{Binding RepairingAssets}" FontSize="32" FontWeight="Bold" Foreground="Orange" Margin="0,8,0,0"/>
+                    </StackPanel>
+                </Border>
+                <Border Grid.Column="3" Style="{StaticResource CardStyle}" Margin="0,0,0,12">
+                    <StackPanel Margin="16">
+                        <TextBlock Text="本月采购" FontSize="14" Foreground="{DynamicResource MutedBrush}"/>
+                        <TextBlock Text="{Binding MonthlyPurchases}" FontSize="32" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}" Margin="0,8,0,0"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <Border Style="{StaticResource CardStyle}" Margin="0,12,0,0">
+                <StackPanel Margin="16">
+                    <TextBlock Text="最近资产变动" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource ForegroundBrush}" Margin="0,0,0,12"/>
+                    <DataGrid ItemsSource="{Binding RecentAssets}" AutoGenerateColumns="False" IsReadOnly="True" 
+                              GridLinesVisibility="Horizontal" BorderThickness="0" Background="Transparent">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="资产编号" Binding="{Binding AssetCode}" Width="120"/>
+                            <DataGridTextColumn Header="资产名称" Binding="{Binding Name}" Width="200"/>
+                            <DataGridTextColumn Header="分类" Binding="{Binding CategoryName}" Width="120"/>
+                            <DataGridTextColumn Header="状态" Binding="{Binding Status}" Width="100"/>
+                            <DataGridTextColumn Header="购入日期" Binding="{Binding PurchaseDate, StringFormat=d}" Width="120"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

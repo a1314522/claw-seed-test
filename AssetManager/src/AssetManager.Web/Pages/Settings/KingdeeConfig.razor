@@ -1,0 +1,185 @@
+@page "/settings/kingdee"
+@layout MainLayout
+
+<PageTitle>金蝶同步配置</PageTitle>
+
+<div class="container">
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <h2>⚙️ 金蝶K3 Cloud同步配置</h2>
+            <p class="text-muted">配置金蝶API连接，实现组织架构和资产卡片自动同步</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5>API连接配置</h5>
+                </div>
+                <div class="card-body">
+                    <form>
+                        <div class="mb-3">
+                            <label class="form-label">金蝶API地址</label>
+                            <input type="text" class="form-control" @bind="apiUrl" placeholder="https://api.kingdee.com/k3cloud/..." />
+                            <small class="form-text text-muted">金蝶K3 Cloud OpenAPI地址</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">应用ID (AppID)</label>
+                            <input type="text" class="form-control" @bind="appId" placeholder="金蝶开放平台应用ID" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">应用密钥 (AppSecret)</label>
+                            <input type="password" class="form-control" @bind="appSecret" placeholder="应用密钥" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">账套ID</label>
+                            <input type="text" class="form-control" @bind="acctId" placeholder="金蝶账套标识" />
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-primary" @onclick="SaveConfig">保存配置</button>
+                            <button type="button" class="btn btn-success" @onclick="TestConnection">测试连接</button>
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(message))
+                        {
+                            <div class="alert @messageClass mt-3" role="alert">
+                                @message
+                            </div>
+                        }
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5>同步操作</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline-primary" @onclick="SyncOrganizations">🔄 同步组织架构</button>
+                        <button class="btn btn-outline-success" @onclick="SyncAssets">📦 同步资产卡片</button>
+                        <button class="btn btn-outline-info" @onclick="SyncEmployees">👥 同步人员</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6>上次同步</h6>
+                </div>
+                <div class="card-body">
+                    <p>部门: @lastSyncTime</p>
+                    <p>资产: @lastAssetSyncTime</p>
+                    <p>状态: <span class="badge bg-success">正常</span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>同步日志</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>时间</th>
+                                <th>类型</th>
+                                <th>结果</th>
+                                <th>数量</th>
+                                <th>详情</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var log in syncLogs)
+                            {
+                                <tr>
+                                    <td>@log.SyncTime.ToString("yyyy-MM-dd HH:mm")</td>
+                                    <td>@log.SyncType</td>
+                                    <td>
+                                        <span class="badge @(log.Result == "Success" ? "bg-success" : "bg-danger")">
+                                            @log.Result
+                                        </span>
+                                    </td>
+                                    <td>@log.RecordCount</td>
+                                    <td>@log.Remarks</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string apiUrl = "";
+    private string appId = "";
+    private string appSecret = "";
+    private string acctId = "";
+    private string message = "";
+    private string messageClass = "alert-info";
+
+    private string lastSyncTime = "未同步";
+    private string lastAssetSyncTime = "未同步";
+
+    private List<SyncLogDto> syncLogs = new();
+
+    protected override void OnInitialized()
+    {
+        // TODO: 加载已保存的配置
+    }
+
+    private void SaveConfig()
+    {
+        // TODO: 保存到SystemConfig表
+        message = "配置已保存";
+        messageClass = "alert-success";
+    }
+
+    private void TestConnection()
+    {
+        // TODO: 调用金蝶API测试连接
+        message = "连接测试成功（模拟）";
+        messageClass = "alert-success";
+    }
+
+    private async Task SyncOrganizations()
+    {
+        // TODO: 调用API触发同步
+        message = "组织架构同步已触发";
+        messageClass = "alert-info";
+    }
+
+    private async Task SyncAssets()
+    {
+        message = "资产卡片同步已触发";
+        messageClass = "alert-info";
+    }
+
+    private async Task SyncEmployees()
+    {
+        message = "人员同步已触发";
+        messageClass = "alert-info";
+    }
+
+    public class SyncLogDto
+    {
+        public DateTime SyncTime { get; set; }
+        public string SyncType { get; set; } = "";
+        public string Result { get; set; } = "";
+        public int RecordCount { get; set; }
+        public string? Remarks { get; set; }
+    }
+}

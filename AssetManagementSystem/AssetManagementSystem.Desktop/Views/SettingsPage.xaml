@@ -1,0 +1,102 @@
+<UserControl x:Class="AssetManagementSystem.Desktop.Views.SettingsPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:AssetManagementSystem.Desktop.ViewModels"
+             Background="{DynamicResource BackgroundBrush}"
+>
+    <UserControl.DataContext>
+        <vm:SettingsViewModel/>
+    </UserControl.DataContext>
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="24" MaxWidth="800">
+            <TextBlock Text="系统设置" FontSize="24" FontWeight="Bold" Foreground="{DynamicResource ForegroundBrush}" Margin="0,0,0,24"/>
+
+            <Border Style="{StaticResource CardStyle}" Padding="24" Margin="0,0,0,12">
+                <StackPanel>
+                    <TextBlock Text="金蝶同步配置" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource ForegroundBrush}" Margin="0,0,0,16"/>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,12,12">
+                            <TextBlock Text="服务器地址" Margin="0,0,0,4" Foreground="{DynamicResource MutedBrush}"/>
+                            <TextBox Text="{Binding SyncConfig.KingdeeApiUrl}" Style="{StaticResource DefaultTextBoxStyle}"/>
+                        </StackPanel>
+                        <StackPanel Grid.Row="0" Grid.Column="1" Margin="12,0,0,12">
+                            <TextBlock Text="应用ID" Margin="0,0,0,4" Foreground="{DynamicResource MutedBrush}"/>
+                            <TextBox Text="{Binding SyncConfig.KingdeeAppId}" Style="{StaticResource DefaultTextBoxStyle}"/>
+                        </StackPanel>
+                        <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,0,12,12">
+                            <TextBlock Text="应用密钥" Margin="0,0,0,4" Foreground="{DynamicResource MutedBrush}"/>
+                            <TextBox Text="{Binding SyncConfig.KingdeeAppSecret}" Style="{StaticResource DefaultTextBoxStyle}"/>
+                        </StackPanel>
+                        <StackPanel Grid.Row="1" Grid.Column="1" Margin="12,0,0,12">
+                            <TextBlock Text="账套ID" Margin="0,0,0,4" Foreground="{DynamicResource MutedBrush}"/>
+                            <TextBox Text="{Binding SyncConfig.KingdeeOrgId}" Style="{StaticResource DefaultTextBoxStyle}"/>
+                        </StackPanel>
+                        <StackPanel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Right">
+                            <Button Content="测试连接" Command="{Binding TestKingdeeConnectionCommand}" Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,8,0"/>
+                            <Button Content="保存" Command="{Binding SaveSyncConfigCommand}" Style="{StaticResource PrimaryButtonStyle}"/>
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource CardStyle}" Padding="24" Margin="0,0,0,12">
+                <StackPanel>
+                    <TextBlock Text="AD域对接配置" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource ForegroundBrush}" Margin="0,0,0,16"/>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,12,12">
+                            <TextBlock Text="域控制器" Margin="0,0,0,4" Foreground="{DynamicResource MutedBrush}"/>
+                            <TextBox Text="{Binding SyncConfig.AdServer}" Style="{StaticResource DefaultTextBoxStyle}"/>
+                        </StackPanel>
+                        <StackPanel Grid.Row="0" Grid.Column="1" Margin="12,0,0,12">
+                            <TextBlock Text="域名" Margin="0,0,0,4" Foreground="{DynamicResource MutedBrush}"/>
+                            <TextBox Text="{Binding SyncConfig.AdDomain}" Style="{StaticResource DefaultTextBoxStyle}"/>
+                        </StackPanel>
+                        <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,0,12,12">
+                            <TextBlock Text="服务账号" Margin="0,0,0,4" Foreground="{DynamicResource MutedBrush}"/>
+                            <TextBox Text="{Binding SyncConfig.AdUser}" Style="{StaticResource DefaultTextBoxStyle}"/>
+                        </StackPanel>
+                        <StackPanel Grid.Row="1" Grid.Column="1" Margin="12,0,0,12">
+                            <TextBlock Text="密码" Margin="0,0,0,4" Foreground="{DynamicResource MutedBrush}"/>
+                            <TextBox Text="{Binding SyncConfig.AdPassword}" Style="{StaticResource DefaultTextBoxStyle}"/>
+                        </StackPanel>
+                        <StackPanel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Right">
+                            <Button Content="测试连接" Command="{Binding TestAdConnectionCommand}" Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,8,0"/>
+                            <Button Content="保存" Command="{Binding SaveSyncConfigCommand}" Style="{StaticResource PrimaryButtonStyle}"/>
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource CardStyle}" Padding="24" Margin="0,0,0,12">
+                <StackPanel>
+                    <TextBlock Text="系统信息" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource ForegroundBrush}" Margin="0,0,0,16"/>
+                    <StackPanel>
+                        <TextBlock Text="数据库路径" Margin="0,0,0,4" Foreground="{DynamicResource MutedBrush}"/>
+                        <TextBlock Text="{Binding DbPath}" FontSize="14" Foreground="{DynamicResource ForegroundBrush}" Margin="0,0,0,12" TextWrapping="Wrap"/>
+                        <Button Content="打开数据库文件夹" Command="{Binding OpenDbFolderCommand}" Style="{StaticResource SecondaryButtonStyle}"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

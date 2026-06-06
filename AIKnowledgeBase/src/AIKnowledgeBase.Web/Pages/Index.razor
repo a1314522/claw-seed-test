@@ -1,0 +1,17 @@
+@page "/"
+@inject NavigationManager Navigation
+@inject AuthService AuthService
+
+@code {
+    protected override void OnInitialized()
+    {
+        if (!AuthService.IsAuthenticated)
+        {
+            Navigation.NavigateTo("/login", true);
+        }
+        else
+        {
+            Navigation.NavigateTo("/search", true);
+        }
+    }
+}

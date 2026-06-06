@@ -1,0 +1,78 @@
+﻿# ==========================================
+# 夏普 MX-C4082R 自动安装与【黑白+单面】强制配置脚本
+# ==========================================
+
+# 1. 基础参数定义
+$printerIP   = "192.168.112.102"
+$portName    = "IP_$printerIP"
+$printerName = "临港-1F缓冲间打印机"
+$driverName  = "SHARP MX-C4082R PCL6"
+
+# 驱动路径
+$infPath     = "\\192.168.10.247\Share\Share Disk\软件安装包\打印机\租用打印机驱动\Chinese1\Chinese1\PCL6\64bit\su2emchs.inf"
+
+Write-Host ">>> 正在启动安装流程: $printerName" -ForegroundColor Cyan
+
+# --- 步骤 1: 创建 TCP/IP 端口 ---
+if (-not (Get-PrinterPort -Name $portName -ErrorAction SilentlyContinue)) {
+    Write-Host "[1/4] 正在创建端口 $portName..." -ForegroundColor Gray
+    Add-PrinterPort -Name $portName -PrinterHostAddress $printerIP
+}
+
+# --- 步骤 2: 注入驱动文件 ---
+Write-Host "[2/4] 正在向系统注入驱动 (PNPUtil)..." -ForegroundColor Gray
+pnputil.exe /add-driver $infPath /install
+
+# --- 步骤 3: 注册打印机驱动 ---
+if (-not (Get-PrinterDriver -Name $driverName -ErrorAction SilentlyContinue)) {
+    Write-Host "[3/4] 正在注册驱动名称: $driverName" -ForegroundColor Gray
+    Add-PrinterDriver -Name $driverName
+}
+
+# --- 步骤 4: 创建打印机实例 ---
+if (-not (Get-Printer -Name $printerName -ErrorAction SilentlyContinue)) {
+    Write-Host "[4/4] 正在创建打印机对象..." -ForegroundColor Gray
+    Add-Printer -Name $printerName -DriverName $driverName -PortName $portName
+    Write-Host "打印机实例创建成功！" -ForegroundColor Green
+} else {
+    Write-Host "提示：打印机 $printerName 已存在。" -ForegroundColor Yellow
+}
+
+# --- 步骤 5: 【核心】强制锁定黑白 + 单面 ---
+Write-Host ">>> 正在强制应用配置：黑白 (Color=False) + 单面 (OneSided)..." -ForegroundColor Cyan
+
+try {
+    # 方案 A: 使用原生 PowerShell 命令推送 (最优雅的方式)
+    Set-PrintConfiguration -PrinterName $printerName -Color $false -DuplexingMode OneSided -ErrorAction Stop
+    Write-Host "A方案：系统指令推送成功。" -ForegroundColor Green
+} catch {
+    Write-Host "A方案失效，启动B方案：底层对象强制注入..." -ForegroundColor Yellow
+    # 方案 B: 手动获取配置对象并修改属性再写回
+    $config = Get-PrintConfiguration -PrinterName $printerName
+    $config.Color = $false
+    $config.DuplexingMode = "OneSided"
+    Set-PrintConfiguration -InputObject $config
+}
+
+# --- 步骤 6: 注册表杀手锏 (防止夏普驱动私下篡改) ---
+$regPath = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Print\Printers\$printerName\PrinterDriverData"
+if (Test-Path $regPath) {
+    # Duplex = 1 通常代表单面；ColorMode = 1 通常代表单色/黑白
+    Set-ItemProperty -Path $regPath -Name "Duplex" -Value 1 -ErrorAction SilentlyContinue
+    Set-ItemProperty -Path $regPath -Name "ColorMode" -Value 1 -ErrorAction SilentlyContinue
+    Write-Host "B方案：注册表标志位已更新。" -ForegroundColor Green
+}
+
+# --- 步骤 7: 最终验证 ---
+$finalCheck = Get-PrintConfiguration -PrinterName $printerName
+Write-Host "------------------------------------"
+Write-Host "当前最终状态："
+Write-Host "颜色模式: $($finalCheck.Color)"
+Write-Host "双面模式: $($finalCheck.DuplexingMode)"
+Write-Host "------------------------------------"
+
+if ($finalCheck.DuplexingMode -eq "OneSided") {
+    Write-Host "恭喜！单面黑白配置已成功锁定。" -ForegroundColor Green
+} else {
+    Write-Host "警告：驱动程序可能固化了双面设置，请检查打印机属性中的'设备设置'。" -ForegroundColor Red
+}

@@ -1,0 +1,63 @@
+﻿# ==========================================
+# HP LaserJet Pro MFP 4104dw 自动安装脚本
+# ==========================================
+
+# 1. 基础参数定义
+$printerIP   = "192.168.10.146"
+$portName    = "IP_$printerIP"
+$printerName = "康桥-1F财务办公室打印机"
+
+# 这是从你提供的 INF 文件 [Strings] 节中提取的准确名称
+$driverName  = "HP LaserJet Pro MFP 4101 4102 4103 4104 PCL 6 (V3)" 
+
+# 请确保此路径指向你刚才打开的那个 .inf 文件
+$infPath     = "\\192.168.10.247\Share\Share Disk\软件安装包\打印机\财务办公室打印机驱动\hplo0374_x64.inf" 
+
+Write-Host ">>> 正在启动安装流程: $printerName" -ForegroundColor Cyan
+
+# --- 步骤 1: 创建 TCP/IP 端口 ---
+if (-not (Get-PrinterPort -Name $portName -ErrorAction SilentlyContinue)) {
+    Write-Host "[1/4] 正在创建端口 $portName..." -ForegroundColor Gray
+    Add-PrinterPort -Name $portName -PrinterHostAddress $printerIP
+}
+
+# --- 步骤 2: 注入驱动到系统驱动库 ---
+if (Test-Path $infPath) {
+    Write-Host "[2/4] 正在注入 HP PCL6 (V3) 驱动文件..." -ForegroundColor Gray
+    # /add-driver 将驱动加入系统备选库，/install 确保驱动即刻可用
+    pnputil.exe /add-driver $infPath /install
+} else {
+    Write-Host "错误：在路径 $infPath 找不到驱动文件！" -ForegroundColor Red
+    pause
+    exit
+}
+
+# --- 步骤 3: 注册打印机驱动 ---
+if (-not (Get-PrinterDriver -Name $driverName -ErrorAction SilentlyContinue)) {
+    Write-Host "[3/4] 正在注册驱动名: $driverName" -ForegroundColor Gray
+    Add-PrinterDriver -Name $driverName
+}
+
+# --- 步骤 4: 创建打印机实例 ---
+if (-not (Get-Printer -Name $printerName -ErrorAction SilentlyContinue)) {
+    Write-Host "[4/4] 正在创建打印机对象..." -ForegroundColor Gray
+    try {
+        Add-Printer -Name $printerName -DriverName $driverName -PortName $portName -ErrorAction Stop
+        Write-Host "打印机 $printerName 安装成功！" -ForegroundColor Green
+    } catch {
+        Write-Host "创建打印机失败，请检查驱动名称是否匹配。" -ForegroundColor Red
+        Write-Host "报错信息: $($_.Exception.Message)" -ForegroundColor Red
+    }
+} else {
+    Write-Host "提示：打印机 $printerName 已存在。" -ForegroundColor Yellow
+}
+
+# --- 验证环节 ---
+$check = Get-Printer -Name $printerName -ErrorAction SilentlyContinue
+if ($check) {
+    Write-Host "------------------------------------"
+    Write-Host "安装核对信息："
+    Write-Host "驱动名称: $($check.DriverName)"
+    Write-Host "端口地址: $printerIP"
+    Write-Host "------------------------------------"
+}

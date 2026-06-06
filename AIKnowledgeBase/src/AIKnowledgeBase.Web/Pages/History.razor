@@ -1,0 +1,72 @@
+@page "/history"
+@attribute [Authorize]
+@inject HttpClient Http
+@inject IJSRuntime JS
+
+<h3>搜索历史</h3>
+
+<button class="btn btn-outline-danger mb-3" @onclick="ClearHistory">清空历史</button>
+
+@if (history == null)
+{
+    <p>加载中...</p>
+}
+else if (!history.Any())
+{
+    <p>暂无搜索历史</p>
+}
+else
+{
+    <div class="list-group">
+        @foreach (var h in history)
+        {
+            <div class="list-group-item">
+                <div class="d-flex justify-content-between">
+                    <h5 class="mb-1">@h.Question</h5>
+                    <small class="text-muted">@h.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</small>
+                </div>
+                <p class="mb-1">@h.Answer</p>
+                @if (h.Sources?.Any() == true)
+                {
+                    <small class="text-muted">来源: @string.Join(" | ", h.Sources.Select(s => $"{s.Source} ({s.Similarity:P0})"))</small>
+                }
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private List<SearchHistoryDto>? history;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadHistory();
+    }
+
+    private async Task LoadHistory()
+    {
+        try
+        {
+            var response = await Http.GetFromJsonAsync<ApiResponse<List<SearchHistoryDto>>>("api/history");
+            history = response?.Data ?? new List<SearchHistoryDto>();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"加载失败: {ex.Message}");
+        }
+    }
+
+    private async Task ClearHistory()
+    {
+        if (!await JS.InvokeAsync<bool>("confirm", "确定清空所有搜索历史？")) return;
+        try
+        {
+            var response = await Http.DeleteAsync("api/history");
+            if (response.IsSuccessStatusCode) history = new List<SearchHistoryDto>();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"清空失败: {ex.Message}");
+        }
+    }
+}

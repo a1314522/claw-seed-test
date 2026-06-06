@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>AI知识库</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; color: #333; }
+.container { max-width: 1100px; margin: 0 auto; padding: 20px; }
+.header { text-align: center; padding: 30px 0; color: #fff; }
+.header h1 { font-size: 36px; margin-bottom: 8px; text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+.header p { font-size: 16px; opacity: 0.9; }
+.card { background: #fff; border-radius: 16px; padding: 24px; margin-bottom: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.15); }
+.chat-box { min-height: 350px; max-height: 500px; overflow-y: auto; padding: 16px; background: #f8f9fa; border-radius: 12px; }
+.message { margin-bottom: 16px; animation: fadeIn 0.3s ease; }
+.message.user { text-align: right; }
+.message .bubble { display: inline-block; padding: 12px 18px; border-radius: 18px; max-width: 80%; line-height: 1.6; font-size: 15px; }
+.message.user .bubble { background: #667eea; color: #fff; border-bottom-right-radius: 4px; }
+.message.ai .bubble { background: #fff; color: #333; border: 1px solid #e0e0e0; border-bottom-left-radius: 4px; text-align: left; }
+.message.ai .bubble.mock { border-left: 4px solid #ff9800; }
+.input-area { display: flex; gap: 12px; margin-top: 16px; }
+.input-area input { flex: 1; padding: 14px 18px; border: 2px solid #e0e0e0; border-radius: 12px; font-size: 15px; outline: none; transition: border-color 0.2s; }
+.input-area input:focus { border-color: #667eea; }
+.input-area button { padding: 14px 28px; background: #667eea; color: #fff; border: none; border-radius: 12px; font-size: 15px; cursor: pointer; transition: transform 0.1s, background 0.2s; }
+.input-area button:hover { background: #5a6fd6; transform: translateY(-1px); }
+.input-area button:active { transform: translateY(0); }
+.sources { font-size: 12px; color: #888; margin-top: 8px; padding-left: 4px; }
+.login-form { max-width: 420px; margin: 80px auto; background: #fff; padding: 40px; border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
+.login-form h2 { text-align: center; margin-bottom: 24px; color: #333; }
+.login-form input { width: 100%; padding: 14px; margin-bottom: 16px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 15px; outline: none; }
+.login-form input:focus { border-color: #667eea; }
+.login-form button { width: 100%; padding: 14px; background: #667eea; color: #fff; border: none; border-radius: 10px; font-size: 16px; cursor: pointer; font-weight: 600; }
+.login-form .hint { text-align: center; color: #999; font-size: 13px; margin-top: 16px; }
+.nav { display: flex; gap: 24px; margin-bottom: 24px; justify-content: center; }
+.nav a { color: #667eea; text-decoration: none; font-weight: 600; padding: 8px 16px; border-radius: 8px; transition: background 0.2s; }
+.nav a:hover { background: rgba(102,126,234,0.1); }
+.nav a.active { background: rgba(102,126,234,0.15); }
+/* Category sidebar */
+.docs-layout { display: flex; gap: 20px; }
+.sidebar { width: 220px; flex-shrink: 0; }
+.sidebar .cat-card { background: #fff; border-radius: 12px; padding: 16px; box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+.sidebar h3 { font-size: 15px; color: #333; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+.sidebar h3 button { font-size: 18px; width: 28px; height: 28px; border: none; background: #667eea; color: #fff; border-radius: 6px; cursor: pointer; }
+.cat-item { padding: 8px 10px; border-radius: 8px; cursor: pointer; font-size: 14px; display: flex; justify-content: space-between; align-items: center; transition: background 0.2s; }
+.cat-item:hover { background: #f0f0f5; }
+.cat-item.active { background: rgba(102,126,234,0.15); color: #667eea; font-weight: 600; }
+.cat-item .count { font-size: 12px; color: #888; background: #f0f0f5; padding: 2px 6px; border-radius: 10px; }
+.cat-item.active .count { background: rgba(102,126,234,0.2); color: #667eea; }
+.cat-actions { display: none; gap: 4px; }
+.cat-item:hover .cat-actions { display: flex; }
+.cat-actions button { border: none; background: none; cursor: pointer; font-size: 13px; color: #888; padding: 2px; }
+.cat-actions button:hover { color: #667eea; }
+.docs-main { flex: 1; min-width: 0; }
+.upload-zone { border: 2px dashed #c0c0c0; padding: 30px; text-align: center; border-radius: 12px; margin-bottom: 20px; cursor: pointer; transition: border-color 0.2s, background 0.2s; }
+.upload-zone:hover { border-color: #667eea; background: rgba(102,126,234,0.03); }
+.upload-zone p { color: #888; font-size: 15px; }
+.doc-list { max-height: 400px; overflow-y: auto; }
+.doc-item { display: flex; justify-content: space-between; align-items: center; padding: 14px; border-bottom: 1px solid #f0f0f0; transition: background 0.2s; border-radius: 8px; }
+.doc-item:hover { background: #f8f9fa; }
+.doc-item .name { font-weight: 600; color: #333; }
+.doc-item .meta { font-size: 13px; color: #888; margin-top: 4px; }
+.doc-item .meta .cat-tag { display: inline-block; background: #e8e4f3; color: #667eea; padding: 1px 6px; border-radius: 4px; font-size: 11px; margin-left: 4px; }
+.doc-item .status { font-size: 12px; padding: 4px 10px; border-radius: 12px; font-weight: 600; }
+.status-done { background: #d4edda; color: #155724; }
+.status-processing { background: #fff3cd; color: #856404; }
+.status-error { background: #f8d7da; color: #721c24; }
+.status-pending { background: #e2e3e5; color: #383d41; }
+.badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 700; margin-left: 8px; }
+.badge-mock { background: #ff9800; color: #fff; }
+.badge-local { background: #28a745; color: #fff; }
+.badge-scope { background: #6c757d; color: #fff; font-size: 10px; }
+.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); display: flex; justify-content: center; align-items: center; z-index: 100; }
+.modal { background: #fff; padding: 24px; border-radius: 12px; width: 360px; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
+.modal h3 { margin-bottom: 16px; }
+.modal input { width: 100%; padding: 12px; margin-bottom: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; }
+.modal input:focus { border-color: #667eea; outline: none; }
+.modal .btns { display: flex; gap: 10px; justify-content: flex-end; margin-top: 8px; }
+.modal .btns button { padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; font-size: 14px; }
+.modal .btns .cancel { background: #f0f0f0; color: #333; }
+.modal .btns .confirm { background: #667eea; color: #fff; }
+.category-select { margin-bottom: 12px; }
+.category-select label { display: block; font-size: 13px; color: #666; margin-bottom: 4px; }
+.category-select select { width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; }
+.scope-selector { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.scope-selector label { font-size: 13px; color: #666; }
+.scope-selector select { padding: 6px 10px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 13px; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+.loading-spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid #667eea; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; }
+/* Mobile responsive */
+@media (max-width: 768px) {
+    .container { padding: 10px; }
+    .header h1 { font-size: 24px; }
+    .header p { font-size: 14px; }
+    .login-form { margin: 40px auto; padding: 24px; max-width: 90%; }
+    .nav { flex-wrap: wrap; gap: 8px; }
+    .nav a { font-size: 14px; padding: 6px 10px; }
+    .docs-layout { flex-direction: column; }
+    .sidebar { width: 100%; }
+    .chat-box { min-height: 250px; max-height: 400px; }
+    .message .bubble { max-width: 90%; font-size: 14px; }
+    .input-area { flex-direction: column; gap: 8px; }
+    .input-area input { width: 100%; }
+    .input-area button { width: 100%; }
+    .doc-item { flex-direction: column; align-items: flex-start; gap: 8px; }
+    .modal { width: 90%; margin: 20px; }
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+const API_BASE = '/api';
+let token = localStorage.getItem('token') || '';
+let categories = [];
+let currentCategory = null; // null = all
+let chatScope = 'all'; // all or category id
+
+function render() {
+    const app = document.getElementById('app');
+    if (!token) {
+        app.innerHTML = `
+            <div class="login-form">
+                <h2>AI 知识库</h2>
+                <input id="username" placeholder="用户名" value="admin">
+                <input id="password" type="password" placeholder="密码" value="admin123">
+                <button onclick="login()">登录</button>
+                <div class="hint">测试账号: admin / admin123</div>
+            </div>`;
+        return;
+    }
+    app.innerHTML = `
+        <div class="container">
+            <div class="header">
+                <h1>AI 知识库</h1>
+                <p>智能文档检索与问答系统</p>
+            </div>
+            <div class="nav">
+                <a href="#" onclick="showChat();return false;" id="navChat">智能问答</a>
+                <a href="#" onclick="showDocs();return false;" id="navDocs">文档管理</a>
+                <a href="#" onclick="showUsers();return false;" id="navUsers" style="display:none">用户管理</a>
+                <a href="#" onclick="logout();return false;">退出</a>
+            </div>
+            <div id="content"></div>
+        </div>`;
+    showChat();
+    checkAdmin();
+}
+
+async function login() {
+    const u = document.getElementById('username').value;
+    const p = document.getElementById('password').value;
+    try {
+        const res = await fetch(`${API_BASE}/auth/login`, {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({username: u, password: p})
+        });
+        const data = await res.json();
+        if (data.access_token) { token = data.access_token; localStorage.setItem('token', token); render(); }
+        else { alert('登录失败: ' + (data.detail || '未知错误')); }
+    } catch(e) { alert('网络错误: ' + e.message); }
+}
+
+function logout() { token = ''; localStorage.removeItem('token'); render(); }
+
+let isAdmin = false;
+
+async function checkAdmin() {
+    try {
+        const res = await fetch(`${API_BASE}/users/`, {headers: {'Authorization': `Bearer ${token}`}});
+        isAdmin = res.ok;
+        if (isAdmin) document.getElementById('navUsers').style.display = '';
+    } catch(e) {}
+}
+
+/* ---------- Chat ---------- */
+function showChat() {
+    document.getElementById('navChat').className = 'active';
+    document.getElementById('navDocs').className = '';
+    document.getElementById('navUsers').className = '';
+    document.getElementById('content').innerHTML = `
+        <div class="docs-layout">
+            <div class="sidebar" style="width:260px">
+                <div class="cat-card">
+                    <h3>搜索历史 <button onclick="clearHistory()">清空</button></h3>
+                    <div id="historyList" style="font-size:13px">加载中...</div>
+                </div>
+            </div>
+            <div class="docs-main">
+                <div class="card">
+                    <div class="chat-box" id="chatBox"></div>
+                    <div class="scope-selector">
+                        <label>检索范围:</label>
+                        <select id="chatScope" onchange="chatScope=this.value">
+                            <option value="all">全部文档</option>
+                        </select>
+                        <span class="badge badge-scope" id="scopeBadge">全部</span>
+                    </div>
+                    <div class="input-area">
+                        <input id="question" placeholder="输入问题，例如：公司的打印机安装流程是什么？" onkeypress="if(event.key==='Enter')ask()">
+                        <button onclick="ask()">发送</button>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+    loadChatScopeOptions();
+    loadHistory();
+    if (!document.getElementById('chatBox').children.length) {
+        addAIMessage('你好！我是 AI 知识库助手。\n\n请先上传一些文档，然后向我提问。我会基于文档内容为你提供准确回答。\n\n如果未配置 Ollama，当前处于测试模式（会显示模拟回答）。', false);
+    }
+}
+
+async function loadHistory() {
+    try {
+        const res = await fetch(`${API_BASE}/history/`, {headers: {'Authorization': `Bearer ${token}`}});
+        const history = await res.json();
+        const box = document.getElementById('historyList');
+        if (!box) return;
+        if (!history.length) { box.innerHTML = '<div style="color:#888;padding:10px">暂无历史记录</div>'; return; }
+        box.innerHTML = history.map(h => `
+            <div style="padding:8px 10px;border-bottom:1px solid #f0f0f0;cursor:pointer" onclick="restoreQuestion('${escapeHtml(h.question)}')">
+                <div style="color:#667eea;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(h.question)}</div>
+                <div style="color:#aaa;font-size:11px;margin-top:2px">${new Date(h.created_at).toLocaleString()}</div>
+            </div>
+        `).join('');
+    } catch(e) { document.getElementById('historyList').innerHTML = '<div style="color:#888;padding:10px">加载失败</div>'; }
+}
+
+function restoreQuestion(q) {
+    document.getElementById('question').value = q;
+    ask();
+}
+
+async function clearHistory() {
+    if (!confirm('确定清空搜索历史？')) return;
+    await fetch(`${API_BASE}/history/`, {method: 'DELETE', headers: {'Authorization': `Bearer ${token}`}});
+    loadHistory();
+}
+
+async function loadChatScopeOptions() {
+    try {
+        const res = await fetch(`${API_BASE}/categories/`, {headers: {'Authorization': `Bearer ${token}`}});
+        const cats = await res.json();
+        const sel = document.getElementById('chatScope');
+        if (sel) {
+            cats.forEach(c => {
+                if (c.id !== 1) {
+                    const opt = document.createElement('option');
+                    opt.value = c.id;
+                    opt.textContent = c.name;
+                    sel.appendChild(opt);
+                }
+            });
+        }
+    } catch(e) {}
+}
+
+function addUserMessage(text) {
+    const box = document.getElementById('chatBox');
+    const div = document.createElement('div');
+    div.className = 'message user';
+    div.innerHTML = `<div class="bubble">${escapeHtml(text)}</div>`;
+    box.appendChild(div);
+    box.scrollTop = box.scrollHeight;
+}
+
+function addAIMessage(text, isMock) {
+    const box = document.getElementById('chatBox');
+    const div = document.createElement('div');
+    div.className = 'message ai';
+    const mockClass = isMock ? 'mock' : '';
+    const badge = isMock ? '<span class="badge badge-mock">测试模式</span>' : '<span class="badge badge-local">本地模型</span>';
+    div.innerHTML = `<div class="bubble ${mockClass}">${escapeHtml(text).replace(/\n/g, '<br>')}${badge}</div>`;
+    box.appendChild(div);
+    box.scrollTop = box.scrollHeight;
+}
+
+function addLoadingMessage() {
+    const box = document.getElementById('chatBox');
+    const div = document.createElement('div');
+    div.className = 'message ai';
+    div.id = 'loadingMsg';
+    div.innerHTML = `<div class="bubble"><span class="loading-spinner"></span> 正在检索并生成回答...</div>`;
+    box.appendChild(div);
+    box.scrollTop = box.scrollHeight;
+}
+
+function removeLoading() {
+    const el = document.getElementById('loadingMsg');
+    if (el) el.remove();
+}
+
+async function ask() {
+    const q = document.getElementById('question').value.trim();
+    if (!q) return;
+    document.getElementById('question').value = '';
+    addUserMessage(q);
+    addLoadingMessage();
+    try {
+        const scope = document.getElementById('chatScope')?.value || 'all';
+        const body = {question: q};
+        if (scope !== 'all') body.category_id = parseInt(scope);
+        const res = await fetch(`${API_BASE}/knowledge/ask`, {
+            method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`},
+            body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        removeLoading();
+        const isMock = data.answer && data.answer.includes('[测试模式');
+        addAIMessage(data.answer, isMock);
+        let sourcesHtml = '';
+        if (data.sources && data.sources.length > 0) {
+            const sourcesDiv = document.createElement('div');
+            sourcesDiv.className = 'sources';
+            sourcesDiv.innerHTML = '参考来源: ' + data.sources.map(s => `${s.source} (相似度 ${s.similarity})`).join(' | ');
+            document.getElementById('chatBox').lastChild.appendChild(sourcesDiv);
+            sourcesHtml = sourcesDiv.innerHTML;
+        }
+        // Save to history
+        fetch(`${API_BASE}/history/`, {
+            method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`},
+            body: JSON.stringify({question: q, answer: data.answer, sources: data.sources || []})
+        }).then(() => loadHistory()).catch(() => {});
+    } catch(e) {
+        removeLoading();
+        addAIMessage('请求出错: ' + e.message, true);
+    }
+}
+
+/* ---------- Users ---------- */
+async function showUsers() {
+    document.getElementById('navChat').className = '';
+    document.getElementById('navDocs').className = '';
+    document.getElementById('navUsers').className = 'active';
+    document.getElementById('content').innerHTML = `
+        <div class="card">
+            <h3 style="margin-bottom:16px">用户管理</h3>
+            <div style="margin-bottom:16px">
+                <button onclick="showUserModal()" style="padding:10px 20px;background:#667eea;color:#fff;border:none;border-radius:8px;cursor:pointer">+ 新建用户</button>
+            </div>
+            <div id="userList">加载中...</div>
+        </div>`;
+    await loadUsers();
+}
+
+async function loadUsers() {
+    try {
+        const res = await fetch(`${API_BASE}/users/`, {headers: {'Authorization': `Bearer ${token}`}});
+        const users = await res.json();
+        const list = document.getElementById('userList');
+        if (!users.length) { list.innerHTML = '<div style="color:#888;padding:20px">暂无用户</div>'; return; }
+        list.innerHTML = `
+            <div style="display:grid;grid-template-columns:80px 1fr 120px 180px 100px;gap:12px;padding:12px 0;border-bottom:2px solid #e0e0e0;font-weight:600">
+                <div>ID</div><div>用户名</div><div>权限</div><div>创建时间</div><div>操作</div>
+            </div>
+            ${users.map(u => `
+                <div style="display:grid;grid-template-columns:80px 1fr 120px 180px 100px;gap:12px;padding:12px 0;border-bottom:1px solid #f0f0f0;align-items:center">
+                    <div>${u.id}</div>
+                    <div>${escapeHtml(u.username)}</div>
+                    <div>${u.is_admin ? '<span style="color:#667eea;font-weight:600">管理员</span>' : '普通用户'}</div>
+                    <div style="color:#888;font-size:13px">${new Date(u.created_at).toLocaleString()}</div>
+                    <div>${u.id !== 1 ? `<button onclick="deleteUser(${u.id})" style="padding:6px 12px;background:#dc3545;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px">删除</button>` : '<span style="color:#aaa;font-size:13px">不可删除</span>'}</div>
+                </div>
+            `).join('')}`;
+    } catch(e) { document.getElementById('userList').innerHTML = '<div style="color:red;padding:20px">加载失败: ' + e.message + '</div>'; }
+}
+
+function showUserModal() {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+        <div class="modal">
+            <h3>新建用户</h3>
+            <input id="userName" placeholder="用户名">
+            <input id="userPass" type="password" placeholder="密码">
+            <label style="font-size:13px;color:#666"><input type="checkbox" id="userAdmin"> 管理员权限</label>
+            <div class="btns">
+                <button class="cancel" onclick="this.closest('.modal-overlay').remove()">取消</button>
+                <button class="confirm" onclick="createUser()">确定</button>
+            </div>
+        </div>`;
+    document.body.appendChild(overlay);
+    window.createUser = async () => {
+        const name = document.getElementById('userName').value.trim();
+        const pass = document.getElementById('userPass').value.trim();
+        const isAdmin = document.getElementById('userAdmin').checked;
+        if (!name || !pass) { alert('请输入用户名和密码'); return; }
+        await fetch(`${API_BASE}/users/`, {
+            method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`},
+            body: JSON.stringify({username: name, password: pass, is_admin: isAdmin})
+        });
+        overlay.remove();
+        loadUsers();
+    };
+}
+
+async function deleteUser(userId) {
+    if (!confirm('确定删除该用户？')) return;
+    await fetch(`${API_BASE}/users/${userId}`, {
+        method: 'DELETE', headers: {'Authorization': `Bearer ${token}`}
+    });
+    loadUsers();
+}
+
+/* ---------- Docs with Categories ---------- */
+async function showDocs() {
+    document.getElementById('navChat').className = '';
+    document.getElementById('navDocs').className = 'active';
+    document.getElementById('content').innerHTML = `
+        <div class="docs-layout">
+            <div class="sidebar">
+                <div class="cat-card">
+                    <h3>文档分类 <button onclick="showCatModal()">+</button></h3>
+                    <div id="catList">加载中...</div>
+                </div>
+            </div>
+            <div class="docs-main">
+                <div class="card">
+                    <div class="upload-zone" onclick="document.getElementById('fileInput').click()">
+                        <p>📁 点击上传或拖拽文件到此处</p>
+                        <p style="font-size:13px;color:#aaa;margin-top:8px">支持 PDF, Word, Excel, TXT, Markdown</p>
+                    </div>
+                    <input type="file" id="fileInput" style="display:none" onchange="upload(this.files[0])">
+                    <h3 style="margin-bottom:12px" id="docListTitle">已上传文档</h3>
+                    <div class="doc-list" id="docList">加载中...</div>
+                </div>
+            </div>
+        </div>`;
+    await loadCategories();
+    await loadDocs();
+}
+
+async function loadCategories() {
+    try {
+        const res = await fetch(`${API_BASE}/categories/`, {headers: {'Authorization': `Bearer ${token}`}});
+        categories = await res.json();
+        const catList = document.getElementById('catList');
+        if (!catList) return;
+        // Count docs per category
+        const docRes = await fetch(`${API_BASE}/documents/list`, {headers: {'Authorization': `Bearer ${token}`}});
+        const docs = await docRes.json();
+        const counts = {};
+        docs.forEach(d => { counts[d.category_id || 1] = (counts[d.category_id || 1] || 0) + 1; });
+        
+        let html = `<div class="cat-item ${currentCategory === null ? 'active' : ''}" onclick="selectCategory(null)">
+            <span>全部文档</span><span class="count">${docs.length}</span>
+        </div>`;
+        categories.forEach(c => {
+            const isActive = currentCategory === c.id;
+            const canDelete = c.id !== 1;
+            html += `<div class="cat-item ${isActive ? 'active' : ''}" onclick="selectCategory(${c.id})">
+                <span>${escapeHtml(c.name)}</span>
+                <div style="display:flex;align-items:center;gap:6px">
+                    <span class="count">${counts[c.id] || 0}</span>
+                    ${canDelete ? `<div class="cat-actions"><button onclick="event.stopPropagation();editCat(${c.id},'${escapeHtml(c.name)}','${escapeHtml(c.description||'')}")">✏️</button><button onclick="event.stopPropagation();deleteCat(${c.id})">🗑️</button></div>` : ''}
+                </div>
+            </div>`;
+        });
+        catList.innerHTML = html;
+    } catch(e) {
+        document.getElementById('catList').innerHTML = '<div style="color:red;padding:10px">分类加载失败</div>';
+    }
+}
+
+function selectCategory(catId) {
+    currentCategory = catId;
+    loadCategories();
+    loadDocs();
+}
+
+async function loadDocs() {
+    try {
+        const url = currentCategory 
+            ? `${API_BASE}/documents/list?category_id=${currentCategory}` 
+            : `${API_BASE}/documents/list`;
+        const res = await fetch(url, {headers: {'Authorization': `Bearer ${token}`}});
+        const docs = await res.json();
+        const statusMap = {done: 'status-done', processing: 'status-processing', error: 'status-error', pending: 'status-pending'};
+        const statusText = {done: '完成', processing: '处理中', error: '错误', pending: '待处理'};
+        const catName = currentCategory ? (categories.find(c => c.id === currentCategory)?.name || '') : '';
+        document.getElementById('docListTitle').textContent = catName ? `${catName} 的文档` : '已上传文档';
+        const html = docs.length ? docs.map(d => `
+            <div class="doc-item">
+                <div>
+                    <div class="name">${escapeHtml(d.original_name)}</div>
+                    <div class="meta">${d.doc_type} | ${formatSize(d.file_size)} | ${new Date(d.created_at).toLocaleString()} | ${d.chunk_count > 0 ? d.chunk_count + ' 个分块' : ''}
+                        ${d.category_name ? `<span class="cat-tag">${escapeHtml(d.category_name)}</span>` : ''}
+                    </div>
+                </div>
+                <span class="status ${statusMap[d.status] || 'status-pending'}">${statusText[d.status] || d.status}</span>
+            </div>
+        `).join('') : '<div style="text-align:center;padding:40px;color:#888">该分类下暂无文档</div>';
+        document.getElementById('docList').innerHTML = html;
+    } catch(e) { document.getElementById('docList').innerHTML = '<div style="color:red;padding:20px">加载失败: ' + e.message + '</div>'; }
+}
+
+async function upload(file) {
+    if (!file) return;
+    const catId = currentCategory || 1;
+    const form = new FormData();
+    form.append('file', file);
+    form.append('category_id', catId);
+    document.getElementById('docList').innerHTML = '<div style="text-align:center;padding:20px"><span class="loading-spinner"></span> 正在上传并处理...</div>';
+    try {
+        await fetch(`${API_BASE}/documents/upload`, {
+            method: 'POST', headers: {'Authorization': `Bearer ${token}`}, body: form
+        });
+        loadDocs();
+        loadCategories();
+    } catch(e) { alert('上传失败: ' + e.message); }
+}
+
+/* ---------- Category Modal ---------- */
+function showCatModal() {
+    showModal('新建分类', {name: '', description: ''}, async (data) => {
+        await fetch(`${API_BASE}/categories/`, {
+            method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`},
+            body: JSON.stringify(data)
+        });
+        loadCategories();
+    });
+}
+
+function editCat(id, name, description) {
+    showModal('编辑分类', {name, description}, async (data) => {
+        await fetch(`${API_BASE}/categories/${id}`, {
+            method: 'PUT', headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`},
+            body: JSON.stringify(data)
+        });
+        loadCategories();
+    });
+}
+
+async function deleteCat(id) {
+    if (!confirm('确定删除该分类？该分类下的文档将移至默认分类。')) return;
+    await fetch(`${API_BASE}/categories/${id}`, {
+        method: 'DELETE', headers: {'Authorization': `Bearer ${token}`}
+    });
+    if (currentCategory === id) currentCategory = null;
+    loadCategories();
+    loadDocs();
+}
+
+function showModal(title, data, onConfirm) {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+        <div class="modal">
+            <h3>${title}</h3>
+            <input id="modalName" placeholder="分类名称" value="${escapeHtml(data.name)}">
+            <input id="modalDesc" placeholder="描述（可选）" value="${escapeHtml(data.description)}">
+            <div class="btns">
+                <button class="cancel" onclick="this.closest('.modal-overlay').remove()">取消</button>
+                <button class="confirm" onclick="confirmModal()">确定</button>
+            </div>
+        </div>`;
+    document.body.appendChild(overlay);
+    window.confirmModal = () => {
+        const name = document.getElementById('modalName').value.trim();
+        if (!name) { alert('请输入分类名称'); return; }
+        onConfirm({name, description: document.getElementById('modalDesc').value.trim()});
+        overlay.remove();
+    };
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function formatSize(bytes) {
+    if (!bytes) return '0 B';
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    return (bytes / Math.pow(1024, i)).toFixed(1) + ' ' + sizes[i];
+}
+
+render();
+</script>
+</body>
+</html>

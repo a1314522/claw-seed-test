@@ -1,0 +1,106 @@
+@page "/search"
+@inject KnowledgeService KnowledgeService
+@inject AuthService AuthService
+
+<PageTitle>智能搜索 - AI 知识库</PageTitle>
+
+<h3>智能搜索</h3>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="input-group mb-3">
+            <input class="form-control" @bind="question" @bind:event="oninput" placeholder="输入您的问题..." @onkeydown="HandleKeyDown" />
+            <button class="btn btn-primary" @onclick="HandleSearch" disabled="@isLoading">
+                @if (isLoading)
+                {
+                    <span class="spinner-border spinner-border-sm"></span>
+                }
+                else
+                {
+                    <span>搜索</span>
+                }
+            </button>
+        </div>
+
+        @if (isMock)
+        {
+            <div class="alert alert-warning">当前为测试模式，未接入真实大模型。请配置 Ollama 服务。</div>
+        }
+
+        @if (!string.IsNullOrEmpty(answer))
+        {
+            <div class="card mb-4">
+                <div class="card-header">
+                    <strong>回答</strong>
+                </div>
+                <div class="card-body">
+                    <pre style="white-space: pre-wrap; word-wrap: break-word; font-family: inherit;">@answer</pre>
+                </div>
+            </div>
+        }
+
+        @if (sources.Any())
+        {
+            <div class="card">
+                <div class="card-header">
+                    <strong>参考来源</strong>
+                </div>
+                <div class="list-group list-group-flush">
+                    @foreach (var source in sources)
+                    {
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span>@source.Source</span>
+                                <span class="badge bg-secondary">相似度: @source.Similarity</span>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private string question = "";
+    private string answer = "";
+    private List<SourceDto> sources = new();
+    private bool isLoading;
+    private bool isMock;
+
+    private async Task HandleSearch()
+    {
+        if (string.IsNullOrWhiteSpace(question)) return;
+
+        isLoading = true;
+        answer = "";
+        sources = new List<SourceDto>();
+
+        try
+        {
+            var result = await KnowledgeService.SearchAsync(new SearchRequest { Question = question, TopK = 5 });
+            if (result?.Data != null)
+            {
+                answer = result.Data.Answer;
+                sources = result.Data.Sources;
+                isMock = result.Data.IsMock;
+            }
+        }
+        catch (Exception ex)
+        {
+            answer = "搜索失败: " + ex.Message;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await HandleSearch();
+        }
+    }
+}

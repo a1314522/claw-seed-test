@@ -1,0 +1,154 @@
+@page "/documents"
+@inject DocumentService DocumentService
+@inject CategoryService CategoryService
+@inject AuthService AuthService
+
+<PageTitle>文档管理 - AI 知识库</PageTitle>
+
+<h3>文档管理</h3>
+
+<div class="row mb-3">
+    <div class="col-md-4">
+        <div class="input-group">
+            <input class="form-control" @bind="searchQuery" placeholder="搜索文档..." />
+            <button class="btn btn-outline-secondary" @onclick="LoadDocuments">搜索</button>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <select class="form-select" @bind="selectedCategoryId">
+            <option value="">全部分类</option>
+            @foreach (var cat in categories)
+            {
+                <option value="@cat.Id">@cat.Name</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-4 text-end">
+        @if (AuthService.HasPermission("DocumentUpload"))
+        {
+            <InputFile OnChange="@UploadFile" class="form-control" />
+        }
+    </div>
+</div>
+
+@if (documents?.Any() == true)
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>文件名</th>
+                <th>分类</th>
+                <th>大小</th>
+                <th>状态</th>
+                <th>上传时间</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var doc in documents)
+            {
+                <tr>
+                    <td>@doc.OriginalName</td>
+                    <td>@doc.CategoryName</td>
+                    <td>@(doc.FileSize / 1024) KB</td>
+                    <td>
+                        <span class="badge @(doc.Status == "Done" ? "bg-success" : doc.Status == "Processing" ? "bg-warning" : "bg-danger")">
+                            @doc.Status
+                        </span>
+                    </td>
+                    <td>@doc.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td>
+                    <td>
+                        @if (AuthService.HasPermission("DocumentDelete"))
+                        {
+                            <button class="btn btn-sm btn-danger" @onclick="() => DeleteDocument(doc.Id)">删除</button>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <nav>
+        <ul class="pagination">
+            @for (int i = 1; i <= totalPages; i++)
+            {
+                var pageNum = i;
+                <li class="page-item @(pageNum == currentPage ? "active" : "")">
+                    <button class="page-link" @onclick="() => GoToPage(pageNum)">@pageNum</button>
+                </li>
+            }
+        </ul>
+    </nav>
+}
+else
+{
+    <p class="text-muted">暂无文档</p>
+}
+
+@code {
+    private List<DocumentDto> documents = new();
+    private List<CategoryDto> categories = new();
+    private string searchQuery = "";
+    private string selectedCategoryId = "";
+    private int currentPage = 1;
+    private int totalPages = 1;
+    private int totalCount = 0;
+    private const int PageSize = 20;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCategories();
+        await LoadDocuments();
+    }
+
+    private async Task LoadCategories()
+    {
+        var result = await CategoryService.GetCategoriesAsync();
+        if (result?.Data != null)
+            categories = result.Data;
+    }
+
+    private async Task LoadDocuments()
+    {
+        int? catId = string.IsNullOrEmpty(selectedCategoryId) ? null : int.Parse(selectedCategoryId);
+        var result = await DocumentService.GetDocumentsAsync(catId, searchQuery, currentPage, PageSize);
+        if (result?.Data != null)
+        {
+            documents = result.Data.Items;
+            totalCount = result.Data.TotalCount;
+            totalPages = result.Data.TotalPages;
+        }
+    }
+
+    private async Task GoToPage(int page)
+    {
+        currentPage = page;
+        await LoadDocuments();
+    }
+
+    private async Task UploadFile(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        if (file == null) return;
+
+        var content = new MultipartFormDataContent();
+        var fileContent = new StreamContent(file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024));
+        content.Add(fileContent, "File", file.Name);
+        content.Add(new StringContent(string.IsNullOrEmpty(selectedCategoryId) ? "1" : selectedCategoryId), "CategoryId");
+
+        var result = await DocumentService.UploadDocumentAsync(content);
+        if (result?.Success == true)
+        {
+            await LoadDocuments();
+        }
+    }
+
+    private async Task DeleteDocument(int id)
+    {
+        var result = await DocumentService.DeleteDocumentAsync(id);
+        if (result?.Success == true)
+        {
+            await LoadDocuments();
+        }
+    }
+}

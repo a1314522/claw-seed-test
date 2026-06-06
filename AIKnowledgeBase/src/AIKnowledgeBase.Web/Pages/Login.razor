@@ -1,0 +1,72 @@
+@page "/login"
+@layout MainLayout
+
+@inject AuthService AuthService
+@inject NavigationManager Navigation
+
+<PageTitle>登录 - AI 知识库</PageTitle>
+
+<div class="login-container">
+    <div class="login-card">
+        <h3 class="text-center mb-4">AI 知识库</h3>
+        <div class="mb-3">
+            <label class="form-label">用户名</label>
+            <input class="form-control" @bind="username" placeholder="admin" />
+        </div>
+        <div class="mb-3">
+            <label class="form-label">密码</label>
+            <input class="form-control" type="password" @bind="password" placeholder="admin123" />
+        </div>
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="alert alert-danger">@errorMessage</div>
+        }
+        <button class="btn btn-primary w-100" @onclick="HandleLogin" disabled="@isLoading">
+            @if (isLoading)
+            {
+                <span class="spinner-border spinner-border-sm me-2"></span>
+            }
+            登录
+        </button>
+    </div>
+</div>
+
+@code {
+    private string username = "";
+    private string password = "";
+    private string? errorMessage;
+    private bool isLoading;
+
+    private async Task HandleLogin()
+    {
+        if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
+        {
+            errorMessage = "请输入用户名和密码";
+            return;
+        }
+
+        isLoading = true;
+        errorMessage = null;
+
+        try
+        {
+            var result = await AuthService.LoginAsync(username, password);
+            if (result?.Data != null)
+            {
+                Navigation.NavigateTo("/", true);
+            }
+            else
+            {
+                errorMessage = result?.Message ?? "登录失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "登录异常: " + ex.Message;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}

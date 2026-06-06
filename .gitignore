@@ -1,0 +1,78 @@
+.openclaw/
+.openclaw-installed
+*.zip
+*.tar.gz
+node_modules/
+*.db
+bin/
+obj/
+venv/
+__pycache__/
+*.pyc
+*.egg-info/
+
+# Secrets
+*.key
+*.pem
+*.crt
+*.env
+.env.local
+.env.*
+.sync-seed.sh
+.seed-backup.txt
+.recover-from-base64.sh
+
+# GitHub tokens (never commit)
+*token*
+*secret*
+# Logs
+*.log
+logs/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temp
+tmp/
+temp/
+*.tmp
+
+# Publish
+publish/
+out/
+dist/
+
+# .NET
+*.suo
+*.user
+*.userprefs
+project.lock.json
+
+# Python
+*.pyo
+*.pyd
+.Python
+pip-log.txt
+
+# Large data
+*.sqlite
+*.sqlite3
+*.db
+*.db-shm
+*.db-wal
+
+# AI model files
+*.onnx
+*.pt
+*.pth
+*.safetensors
+*.gguf
+*.bin
+
+# Docker volumes
+volumes/
