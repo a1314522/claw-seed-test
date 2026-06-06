@@ -1,200 +1,160 @@
-using AIKnowledgeBase.Core.Entities;
-using AIKnowledgeBase.Infrastructure.Data;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using AIKnowledgeBase.Core.Entities;
+using AIKnowledgeBase.Infrastructure.Services;
+using System.ComponentModel.DataAnnotations;
 
-namespace AIKnowledgeBase.API.Controllers
+namespace AIKnowledgeBase.API.Controllers.v1;
+
+[ApiController]
+[Route("api/v1/am/assets")]
+[Produces("application/json")]
+public class AssetsController : ControllerBase
 {
-    [ApiController]
-    [Route("api/v1/am/[controller]")]
-    [Authorize]
-    public class AssetsController : ControllerBase
+    private readonly IAssetService _assetService;
+    private readonly ILogger<AssetsController> _logger;
+
+    public AssetsController(IAssetService assetService, ILogger<AssetsController> logger)
     {
-        private readonly ApplicationDbContext _context;
-        private readonly ILogger<AssetsController> _logger;
+        _assetService = assetService;
+        _logger = logger;
+    }
 
-        public AssetsController(ApplicationDbContext context, ILogger<AssetsController> logger)
+    [HttpGet]
+    public async Task<ActionResult<PagedResponse<Asset>>> GetAll(
+        [FromQuery] string? category,
+        [FromQuery] string? status,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 50)
+    {
+        var assets = await _assetService.GetAllAsync(category, status, page, pageSize);
+        var stats = await _assetService.GetStatisticsAsync();
+        
+        return Ok(new PagedResponse<Asset>
         {
-            _context = context;
-            _logger = logger;
-        }
+            Items = assets.ToList(),
+            Total = stats["total"],
+            Page = page,
+            PageSize = pageSize
+        });
+    }
 
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Asset>>> GetAssets([FromQuery] string? category = null, [FromQuery] string? status = null, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
-        {
-            var query = _context.Assets.AsNoTracking().AsQueryable();
-            
-            if (!string.IsNullOrEmpty(category))
-                query = query.Where(a => a.Category == category);
-            
-            if (!string.IsNullOrEmpty(status))
-                query = query.Where(a => a.Status == status);
-            
-            var total = await query.CountAsync();
-            var items = await query
-                .OrderByDescending(a => a.CreatedAt)
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync();
-            
-            return Ok(new { total, page, pageSize, items });
-        }
+    [HttpGet("{id}")]
+    public async Task<ActionResult<Asset>> GetById(Guid id)
+    {
+        var asset = await _assetService.GetByIdAsync(id);
+        if (asset == null) return NotFound();
+        return Ok(asset);
+    }
 
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Asset>> GetAsset(Guid id)
+    [HttpPost]
+    public async Task<ActionResult<Asset>> Create([FromBody] CreateAssetRequest request)
+    {
+        try
         {
-            var asset = await _context.Assets.FindAsync(id);
-            if (asset == null) return NotFound();
-            return Ok(asset);
-        }
-
-        [HttpPost]
-        [Authorize(Roles = "Admin,AssetManager")]
-        public async Task<ActionResult<Asset>> CreateAsset(Asset asset)
-        {
-            asset.Id = Guid.NewGuid();
-            asset.CreatedAt = DateTime.UtcNow;
-            asset.Status = "in_use";
-            
-            _context.Assets.Add(asset);
-            await _context.SaveChangesAsync();
-            
-            _logger.LogInformation("Asset created: {AssetCode}", asset.AssetCode);
-            
-            return CreatedAtAction(nameof(GetAsset), new { id = asset.Id }, asset);
-        }
-
-        [HttpPut("{id}")]
-        [Authorize(Roles = "Admin,AssetManager")]
-        public async Task<IActionResult> UpdateAsset(Guid id, Asset asset)
-        {
-            if (id != asset.Id) return BadRequest();
-            
-            _context.Entry(asset).State = EntityState.Modified;
-            asset.UpdatedAt = DateTime.UtcNow;
-            
-            try
+            var asset = new Asset
             {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
+                AssetCode = request.AssetCode,
+                AssetName = request.AssetName,
+                AssetType = request.AssetType,
+                Category = request.Category,
+                DepartmentId = request.DepartmentId,
+                UserId = request.UserId,
+                PurchaseDate = request.PurchaseDate,
+                PurchasePrice = request.PurchasePrice,
+                Vendor = request.Vendor,
+                Location = request.Location,
+                Specs = request.Specs
+            };
+
+            var created = await _assetService.CreateAsync(asset);
+            return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to create asset");
+            return StatusCode(500, new { error = "Failed to create asset" });
+        }
+    }
+
+    [HttpPut("{id}")]
+    public async Task<ActionResult> Update(Guid id, [FromBody] UpdateAssetRequest request)
+    {
+        try
+        {
+            var asset = new Asset
             {
-                if (!AssetExists(id)) return NotFound();
-                throw;
-            }
-            
+                AssetName = request.AssetName,
+                Category = request.Category,
+                Status = request.Status,
+                Location = request.Location,
+                Specs = request.Specs,
+                PurchasePrice = request.PurchasePrice,
+                DepartmentId = request.DepartmentId,
+                UserId = request.UserId
+            };
+
+            await _assetService.UpdateAsync(id, asset);
             return NoContent();
         }
-
-        [HttpDelete("{id}")]
-        [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> DeleteAsset(Guid id)
+        catch (KeyNotFoundException)
         {
-            var asset = await _context.Assets.FindAsync(id);
-            if (asset == null) return NotFound();
-            
-            _context.Assets.Remove(asset);
-            await _context.SaveChangesAsync();
-            
+            return NotFound();
+        }
+    }
+
+    [HttpDelete("{id}")]
+    public async Task<ActionResult> Delete(Guid id)
+    {
+        try
+        {
+            await _assetService.DeleteAsync(id);
             return NoContent();
         }
-
-        [HttpPost("{id}/transfer")]
-        [Authorize(Roles = "Admin,AssetManager")]
-        public async Task<IActionResult> TransferAsset(Guid id, [FromBody] TransferRequest request)
+        catch (KeyNotFoundException)
         {
-            var asset = await _context.Assets.FindAsync(id);
-            if (asset == null) return NotFound();
-            
-            // Log transfer
-            var log = new AssetLog
-            {
-                Id = Guid.NewGuid(),
-                AssetId = id,
-                ActionType = "transfer",
-                FromDepartmentId = asset.DepartmentId,
-                ToDepartmentId = request.DepartmentId,
-                FromUserId = asset.UserId,
-                ToUserId = request.UserId,
-                ActionDate = DateTime.UtcNow,
-                Remark = request.Remark,
-                OperatedBy = User.Identity?.Name
-            };
-            
-            _context.AssetLogs.Add(log);
-            
-            // Update asset
-            asset.DepartmentId = request.DepartmentId;
-            asset.UserId = request.UserId;
-            asset.UpdatedAt = DateTime.UtcNow;
-            
-            await _context.SaveChangesAsync();
-            
-            return Ok(new { message = "Asset transferred successfully" });
-        }
-
-        [HttpPost("{id}/scrap")]
-        [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> ScrapAsset(Guid id, [FromBody] ScrapRequest request)
-        {
-            var asset = await _context.Assets.FindAsync(id);
-            if (asset == null) return NotFound();
-            
-            asset.Status = "scrapped";
-            asset.ScrapDate = DateTime.UtcNow;
-            asset.ScrapReason = request.Reason;
-            asset.UpdatedAt = DateTime.UtcNow;
-            
-            // Log scrap
-            var log = new AssetLog
-            {
-                Id = Guid.NewGuid(),
-                AssetId = id,
-                ActionType = "scrap",
-                ActionDate = DateTime.UtcNow,
-                Remark = request.Reason,
-                OperatedBy = User.Identity?.Name
-            };
-            
-            _context.AssetLogs.Add(log);
-            await _context.SaveChangesAsync();
-            
-            return Ok(new { message = "Asset scrapped successfully" });
-        }
-
-        [HttpGet("reports/summary")]
-        public async Task<ActionResult> GetSummary()
-        {
-            var total = await _context.Assets.CountAsync();
-            var byCategory = await _context.Assets
-                .GroupBy(a => a.Category)
-                .Select(g => new { category = g.Key, count = g.Count() })
-                .ToListAsync();
-            
-            var byStatus = await _context.Assets
-                .GroupBy(a => a.Status)
-                .Select(g => new { status = g.Key, count = g.Count() })
-                .ToListAsync();
-            
-            return Ok(new { total, byCategory, byStatus });
-        }
-
-        private bool AssetExists(Guid id)
-        {
-            return _context.Assets.Any(e => e.Id == id);
+            return NotFound();
         }
     }
 
-    public class TransferRequest
+    [HttpGet("stats")]
+    public async Task<ActionResult> GetStatistics()
     {
-        public Guid DepartmentId { get; set; }
-        public Guid? UserId { get; set; }
-        public string? Remark { get; set; }
+        var stats = await _assetService.GetStatisticsAsync();
+        return Ok(stats);
     }
+}
 
-    public class ScrapRequest
-    {
-        public string Reason { get; set; } = "";
-    }
+public class PagedResponse<T>
+{
+    public List<T> Items { get; set; } = new();
+    public int Total { get; set; }
+    public int Page { get; set; }
+    public int PageSize { get; set; }
+}
+
+public class CreateAssetRequest
+{
+    [Required] public string AssetCode { get; set; } = "";
+    [Required] public string AssetName { get; set; } = "";
+    public string? AssetType { get; set; }
+    public string? Category { get; set; }
+    public string? DepartmentId { get; set; }
+    public string? UserId { get; set; }
+    public DateTime? PurchaseDate { get; set; }
+    public decimal? PurchasePrice { get; set; }
+    public string? Vendor { get; set; }
+    public string? Location { get; set; }
+    public string? Specs { get; set; }
+}
+
+public class UpdateAssetRequest
+{
+    public string? AssetName { get; set; }
+    public string? Category { get; set; }
+    public string? Status { get; set; }
+    public string? Location { get; set; }
+    public string? Specs { get; set; }
+    public decimal? PurchasePrice { get; set; }
+    public string? DepartmentId { get; set; }
+    public string? UserId { get; set; }
 }
