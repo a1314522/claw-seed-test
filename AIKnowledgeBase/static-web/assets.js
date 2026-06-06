@@ -1,11 +1,24 @@
+// API Base URL (through Nginx proxy)
+const API_BASE = '/api/v1/am';
+
+// Show/hide forms
+function showAddForm() {
+    document.getElementById('addForm').classList.remove('hidden');
+    document.getElementById('assets').classList.add('hidden');
+}
+
+function hideAddForm() {
+    document.getElementById('addForm').classList.add('hidden');
+    document.getElementById('assets').classList.remove('hidden');
+}
+
+// Submit form
 async function submitForm() {
     const data = {
         assetCode: document.getElementById('assetCode').value,
         assetName: document.getElementById('assetName').value,
         assetType: document.getElementById('assetType').value,
         category: document.getElementById('category').value,
-        departmentId: document.getElementById('departmentId').value,
-        userId: document.getElementById('userId').value,
         purchaseDate: document.getElementById('purchaseDate').value,
         purchasePrice: parseFloat(document.getElementById('purchasePrice').value) || 0,
         vendor: document.getElementById('vendor').value,
@@ -14,7 +27,7 @@ async function submitForm() {
     };
     
     try {
-        const response = await fetch('http://115.29.233.46:5000/api/v1/am/assets', {
+        const response = await fetch(`${API_BASE}/assets`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -26,6 +39,7 @@ async function submitForm() {
         if (response.ok) {
             alert('资产创建成功');
             loadAssets();
+            hideAddForm();
             document.getElementById('assetForm').reset();
         } else {
             const error = await response.text();
@@ -36,9 +50,10 @@ async function submitForm() {
     }
 }
 
+// Load assets
 async function loadAssets() {
     try {
-        const response = await fetch('http://115.29.233.46:5000/api/v1/am/assets?page=1&pageSize=50', {
+        const response = await fetch(`${API_BASE}/assets?page=1&pageSize=50`, {
             headers: {
                 'Authorization': 'Bearer ' + localStorage.getItem('token')
             }
@@ -66,9 +81,19 @@ async function loadAssets() {
             `;
             tbody.appendChild(tr);
         });
+        
+        // Update stats
+        updateStats(data.total || 0);
     } catch (e) {
         console.error('加载资产列表失败:', e);
     }
+}
+
+function updateStats(total) {
+    document.getElementById('totalAssets').textContent = total;
+    document.getElementById('inUseAssets').textContent = '-';
+    document.getElementById('maintenanceAssets').textContent = '-';
+    document.getElementById('scrappedAssets').textContent = '-';
 }
 
 function getStatusClass(status) {
