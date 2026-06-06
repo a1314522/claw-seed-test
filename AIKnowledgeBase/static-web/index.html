@@ -3,52 +3,122 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI 知识库系统</title>
+    <title>资产管理系统</title>
     <link rel="stylesheet" href="css/style.css">
+    <style>
+        .hero {
+            text-align: center;
+            padding: 3rem 1rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 12px;
+            margin: 2rem 0;
+        }
+        .hero h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+        .hero p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+        .feature-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            text-align: center;
+            transition: transform 0.2s;
+            cursor: pointer;
+            text-decoration: none;
+            color: inherit;
+        }
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        }
+        .feature-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        .feature-card h3 {
+            color: #667eea;
+            margin-bottom: 0.5rem;
+        }
+        .feature-card p {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        .login-btn {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: white;
+            color: #667eea;
+            padding: 0.5rem 1.5rem;
+            border-radius: 20px;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .login-btn:hover {
+            background: #f0f0f0;
+        }
+    </style>
 </head>
 <body>
     <nav class="navbar">
-        <div class="nav-brand">📚 AI 知识库</div>
+        <div class="nav-brand">🏢 资产管理系统</div>
         <div class="nav-links">
             <a href="index.html">首页</a>
-            <a href="assets.html">🏢 资产管理</a>
-            <a href="#documents">📄 文档</a>
-            <a href="#search">🔍 搜索</a>
+            <a href="assets.html">资产管理</a>
+            <a href="login.html" class="login-btn">登录</a>
         </div>
     </nav>
 
     <main class="container">
-        <section class="section">
-            <h2>欢迎使用 AI 知识库 + 资产管理系统</h2>
-            <p>这是一个集成了知识库管理和固定资产管理的综合平台。</p>
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-value">📄</div>
-                    <div class="stat-label">知识库文档管理</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value">🏢</div>
-                    <div class="stat-label">固定资产管理</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value">🔍</div>
-                    <div class="stat-label">全文搜索</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value">📊</div>
-                    <div class="stat-label">监控面板</div>
-                </div>
-            </div>
-        </section>
+        <div class="hero">
+            <h1>🏢 企业资产管理系统</h1>
+            <p>全生命周期资产管理 · 采购入账 · 维护报废 · 实时统计</p>
+        </div>
 
-        <section class="section">
-            <h2>快速链接</h2>
-            <div class="filters">
-                <a href="assets.html" class="btn-primary">🏢 进入资产管理系统</a>
-                <a href="http://115.29.233.46:3000" class="btn-primary" target="_blank">📊 Grafana 监控</a>
-                <a href="http://115.29.233.46:9090" class="btn-primary" target="_blank">📈 Prometheus</a>
-            </div>
-        </section>
+        <div class="features">
+            <a href="assets.html" class="feature-card">
+                <div class="feature-icon">📦</div>
+                <h3>资产台账</h3>
+                <p>管理所有固定资产，支持分类、位置、状态追踪</p>
+            </a>
+            <a href="assets.html" class="feature-card">
+                <div class="feature-icon">📊</div>
+                <h3>统计报表</h3>
+                <p>实时统计资产数量、价值、分布情况</p>
+            </a>
+            <a href="assets.html" class="feature-card">
+                <div class="feature-icon">🔍</div>
+                <h3>资产查询</h3>
+                <p>快速搜索资产信息，支持多条件筛选</p>
+            </a>
+            <a href="assets.html" class="feature-card">
+                <div class="feature-icon">⚙️</div>
+                <h3>系统设置</h3>
+                <p>配置分类、位置、用户权限等基础数据</p>
+            </a>
+        </div>
+
+        <div class="card">
+            <h2>快速开始</h2>
+            <p>点击下方按钮进入资产管理界面：</p>
+            <a href="assets.html" class="btn-primary">进入资产管理</a>
+        </div>
     </main>
+
+    <footer style="text-align: center; padding: 2rem; color: #666;">
+        <p>© 2024 企业资产管理系统 | 内网部署</p>
+    </footer>
 </body>
 </html>
