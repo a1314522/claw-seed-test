@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>资产管理系统</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-brand">🏢 资产管理系统</div>
+        <div class="nav-links">
+            <a href="#assets">资产列表</a>
+            <a href="#categories">分类管理</a>
+            <a href="#reports">报表</a>
+            <a href="#settings">设置</a>
+        </div>
+    </nav>
+
+    <main class="container">
+        <section id="dashboard" class="section">
+            <h2>仪表盘</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalAssets">-</div>
+                    <div class="stat-label">总资产</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="inUseAssets">-</div>
+                    <div class="stat-label">使用中</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="maintenanceAssets">-</div>
+                    <div class="stat-label">维修中</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="scrappedAssets">-</div>
+                    <div class="stat-label">已报废</div>
+                </div>
+            </div>
+        </section>
+
+        <section id="assets" class="section">
+            <div class="section-header">
+                <h2>资产列表</h2>
+                <button class="btn-primary" onclick="showAddForm()">+ 新增资产</button>
+            </div>
+            
+            <div class="filters">
+                <input type="text" id="searchInput" placeholder="搜索资产编号或名称...">
+                <select id="categoryFilter">
+                    <option value="">全部分类</option>
+                </select>
+                <select id="statusFilter">
+                    <option value="">全部状态</option>
+                    <option value="in_use">使用中</option>
+                    <option value="maintenance">维修中</option>
+                    <option value="scrap">已报废</option>
+                </select>
+            </div>
+
+            <table class="data-table" id="assetTable">
+                <thead>
+                    <tr>
+                        <th>资产编号</th>
+                        <th>资产名称</th>
+                        <th>分类</th>
+                        <th>状态</th>
+                        <th>采购价格</th>
+                        <th>位置</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Data loaded by JS -->
+                </tbody>
+            </table>
+        </section>
+
+        <section id="addForm" class="section hidden">
+            <h2>新增资产</h2>
+            <form id="assetForm" onsubmit="event.preventDefault(); submitForm();">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>资产编号 *</label>
+                        <input type="text" id="assetCode" required>
+                    </div>
+                    <div class="form-group">
+                        <label>资产名称 *</label>
+                        <input type="text" id="assetName" required>
+                    </div>
+                    <div class="form-group">
+                        <label>资产类型</label>
+                        <select id="assetType">
+                            <option value="fixed_asset">固定资产</option>
+                            <option value="consumable">消耗品</option>
+                            <option value="low_value">低值易耗品</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>分类</label>
+                        <input type="text" id="category" placeholder="如：电脑、打印机">
+                    </div>
+                    <div class="form-group">
+                        <label>采购日期</label>
+                        <input type="date" id="purchaseDate">
+                    </div>
+                    <div class="form-group">
+                        <label>采购价格</label>
+                        <input type="number" id="purchasePrice" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label>供应商</label>
+                        <input type="text" id="vendor">
+                    </div>
+                    <div class="form-group">
+                        <label>位置</label>
+                        <input type="text" id="location" placeholder="如：临港2F仓库">
+                    </div>
+                    <div class="form-group full-width">
+                        <label>规格参数</label>
+                        <textarea id="specs" rows="3" placeholder="JSON格式"></textarea>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn-primary">保存</button>
+                    <button type="button" class="btn-secondary" onclick="hideAddForm()">取消</button>
+                </div>
+            </form>
+        </section>
+    </main>
+
+    <script src="assets.js"></script>
+</body>
+</html>
