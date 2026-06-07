@@ -1,0 +1,46 @@
+name: CLAW Growth Loop
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+
+jobs:
+  grow:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        
+      - name: Check last state
+        id: state
+        run: |
+          if [ -f state.json ]; then
+            echo "has_state=true" >> $GITHUB_OUTPUT
+            cat state.json
+          else
+            echo "has_state=false" >> $GITHUB_OUTPUT
+            echo '{"iteration":0,"last_run":"","tasks_completed":0}' > state.json
+          fi
+          
+      - name: Run growth step
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Iteration $(jq -r '.iteration' state.json)"
+          
+          # Increment iteration
+          jq '.iteration += 1 | .last_run = now | .tasks_completed += 1' state.json > state.json.tmp
+          mv state.json.tmp state.json
+          
+          # Create heartbeat
+          echo "{\"timestamp\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"node\":\"actions-1\",\"status\":\"alive\"}" > nodes/actions-1-heartbeat.json
+          
+          echo "Growth step complete"
+          
+      - name: Commit state
+        run: |
+          git config user.name "CLAW-Bot"
+          git config user.email "claw@seed.test"
+          git add state.json nodes/
+          git diff --cached --quiet || git commit -m "[CLAW] Growth iteration $(jq -r '.iteration' state.json) [skip ci]"
+          git push
